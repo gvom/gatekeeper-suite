@@ -1,0 +1,8 @@
+# Governor: usa APENAS a biblioteca padrão do Python (zero dependências externas).
+# As dependências abaixo são do Gatekeeper (guardião de permissões).
+#
+# Se você só quer o Governor (monitor de limite + barreira), pode ignorar isto.
+
+httpx>=0.24          # cliente HTTP do gatekeeper (backends LLM)
+bashlex>=0.18        # parsing de comandos Bash para análise de segurança
+json-repair>=0.25    # tolerância a JSON malformado retornado por LLMs

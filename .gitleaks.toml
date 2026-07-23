@@ -1,0 +1,14 @@
+# Configuração do gitleaks para o gatekeeper-suite.
+# Estende as regras padrão e libera APENAS segredos falsos usados em testes
+# (fixtures que existem para validar a própria lógica de redação/detecção).
+title = "gatekeeper-suite"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Dummy/test-only fake secrets (not real credentials)"
+# Chave sintética usada em gatekeeper/test_gatekeeper.py para testar a redação.
+regexes = [
+  '''sk-abcdef0123456789abcdef''',
+]

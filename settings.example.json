@@ -1,0 +1,90 @@
+{
+  "//": "Exemplo dos blocos de hook do gatekeeper-suite. NÃO é um settings.json completo.",
+  "//paths": "install.py insere os caminhos absolutos reais. Aqui usamos <HOOKS> = seu ~/.claude/hooks.",
+  "//secrets": "Preencha as chaves via .env / variáveis de ambiente. NUNCA cometa chaves aqui.",
+
+  "env": {
+    "GATEKEEPER_BACKEND": "ollama",
+    "GATEKEEPER_BACKEND_CHAIN": "gemini,ollama",
+    "GATEKEEPER_GEMINI_API_KEY": "<SUA_CHAVE_GEMINI>",
+    "GATEKEEPER_CEREBRAS_API_KEY": "<SUA_CHAVE_CEREBRAS>",
+    "OPENROUTER_API_KEY": "<SUA_CHAVE_OPENROUTER>",
+    "GATEKEEPER_CLAUDE_HEADLESS": "true",
+    "GATEKEEPER_FAILOPEN_MAX_RISK": "medium",
+    "GATEKEEPER_REMOTE": "",
+    "GATEKEEPER_REMOTE_TOKEN": "<SEU_BOT_TOKEN_TELEGRAM>",
+    "GATEKEEPER_REMOTE_CHAT_ID": "<SEU_CHAT_ID>"
+  },
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"<HOOKS>/governor_barrier.py\"",
+            "timeout": 21600
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"<HOOKS>/gatekeeper.py\"",
+            "timeout": 420
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"<HOOKS>/gatekeeper.py\"",
+            "timeout": 420
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"<HOOKS>/gatekeeper.py\"",
+            "timeout": 420
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"<HOOKS>/gatekeeper.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"<HOOKS>/governor_monitor_start.py\"",
+            "timeout": 10,
+            "statusMessage": "Starting governor monitor..."
+          }
+        ]
+      }
+    ]
+  }
+}

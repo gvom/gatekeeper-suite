@@ -1,0 +1,44 @@
+# ── Segredos e credenciais (NUNCA versionar) ──────────────────────────────
+.credentials.json
+.env
+*.env
+*_secret*
+*secret*.json
+*.key
+*.pem
+
+# ── Estado de runtime do gatekeeper/governor ──────────────────────────────
+*_session.json
+*_cb.json
+*_failopen.json
+gatekeeper_*.json
+governor/state.json
+governor/checkpoint.json
+governor/recovery_notice.txt
+governor/*.log
+*.lock
+monitor.lock
+
+# ── Logs / backups / temporários ──────────────────────────────────────────
+*.log
+*.bak
+*.tmp
+.jqwik-database
+
+# ── Python ────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+
+# ── SO / editores ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

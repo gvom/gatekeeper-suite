@@ -1,0 +1,20 @@
+gatekeeper-suite
+Copyright (c) 2026 Gabriel Meneses
+
+This product includes software and methods developed by third parties:
+
+--------------------------------------------------------------------------------
+usage-monitor-for-claude
+https://github.com/jens-duttke/usage-monitor-for-claude
+Copyright (c) Jens Duttke
+Licensed under the MIT License.
+
+The Governor component replicates the method for reading Claude Code account
+usage via the internal OAuth endpoint (GET https://api.anthropic.com/api/oauth/usage,
+with the `anthropic-beta: oauth-2025-04-20` header and the access token from
+~/.claude/.credentials.json). The auth + fetch approach and the CLI token-refresh
+strategy were derived from that project's `api.py` and `claude_cli.py`.
+--------------------------------------------------------------------------------
+
+The OAuth usage endpoint is internal and undocumented; it may change or be
+blocked without notice. See docs/SECURITY.md.
