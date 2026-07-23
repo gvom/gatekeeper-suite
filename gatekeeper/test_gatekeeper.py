@@ -10,7 +10,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 # ── Importar gatekeeper como módulo ──────────────────────────────────────
 spec = importlib.util.spec_from_file_location(
     "qg",
-    r"C:\Users\gvome\.claude\hooks\gatekeeper.py",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "gatekeeper.py"),
 )
 qg = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(qg)
