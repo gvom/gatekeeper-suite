@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from governor.monitor import Monitor, SingleInstanceLock, _pid_alive
 import governor.monitor as mon
+from governor.inflight import InflightTracker
 from governor.state_store import GlobalPauseStateStore, PAUSED_WAITING_FOR_RESET
 from .base import GovernorTestCase
 from .fakes import FakeProvider, base_dt
@@ -81,6 +82,18 @@ class TestMonitorCycle(GovernorTestCase):
         self.assertTrue(self.store.read().is_paused())
         self.fp.set(30.0, self.base); self.m.run_once()
         self.assertTrue(self.store.read().allows_execution())
+
+    def test_inflight_pushes_over_threshold(self):
+        # util 94 sozinho não pausa; com 2 chamadas in-flight (2*1.0%) vira 96 ≥ 95 → pausa
+        tr = InflightTracker(self.cfg)
+        m = Monitor(config=self.cfg, provider=self.fp, store=self.store, inflight=tr)
+        self.fp.set(94.0, self.base)
+        m.run_once()
+        self.assertFalse(self.store.read().is_paused())  # 94 < 95
+        tr.record_start(); tr.record_start()
+        self.fp.set(94.0, self.base)
+        m.run_once()
+        self.assertTrue(self.store.read().is_paused())    # 94 + 2 = 96 ≥ 95
 
     def test_metrics_unavailable_fail_open(self):
         self.store.mark_running()

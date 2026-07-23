@@ -85,6 +85,18 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"<HOOKS>/governor_inflight_end.py\"",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }

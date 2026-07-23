@@ -57,6 +57,7 @@ def copy_code(hooks_dir: str) -> None:
     _copy_package(os.path.join(REPO, "governor"), os.path.join(hooks_dir, "governor"))
     _copy_file(os.path.join(REPO, "governor_barrier.py"), os.path.join(hooks_dir, "governor_barrier.py"))
     _copy_file(os.path.join(REPO, "governor_monitor_start.py"), os.path.join(hooks_dir, "governor_monitor_start.py"))
+    _copy_file(os.path.join(REPO, "governor_inflight_end.py"), os.path.join(hooks_dir, "governor_inflight_end.py"))
 
 
 def install_deps() -> None:
@@ -101,6 +102,10 @@ def _hook_specs(hooks_dir: str):
         "hooks": [{"type": "command", "command": _cmd(hooks_dir, "governor_monitor_start.py"),
                    "timeout": 10, "statusMessage": "Starting governor monitor..."}],
     }
+    inflight_end = {
+        "matcher": "*",
+        "hooks": [{"type": "command", "command": _cmd(hooks_dir, "governor_inflight_end.py"), "timeout": 10}],
+    }
     return [
         ("PreToolUse", "governor_barrier.py", barrier, True),
         ("PreToolUse", "gatekeeper.py::Bash", gk_bash, False),
@@ -108,6 +113,7 @@ def _hook_specs(hooks_dir: str):
         ("PermissionRequest", "gatekeeper.py", gk_perm, False),
         ("UserPromptSubmit", "gatekeeper.py", gk_prompt, False),
         ("SessionStart", "governor_monitor_start.py", monitor, False),
+        ("PostToolUse", "governor_inflight_end.py", inflight_end, False),
     ]
 
 

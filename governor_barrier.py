@@ -89,6 +89,16 @@ def _recovery_manager(config):
         return None
 
 
+def _record_inflight_start(config) -> None:
+    """Marca que a ferramenta vai executar agora (contagem in-flight). Fail-open."""
+    try:
+        from governor.inflight import InflightTracker
+
+        InflightTracker(config).record_start()
+    except Exception:
+        pass
+
+
 def run(
     data: dict,
     *,
@@ -122,6 +132,7 @@ def run(
         return 0  # fail-open: sem estado legível → libera
 
     if state.allows_execution():
+        _record_inflight_start(config)  # tool vai rodar agora
         return 0
 
     # Pausado: registra checkpoint mecânico e segura a MESMA chamada.
@@ -155,6 +166,7 @@ def run(
             recovery.mark_resumed()
         except Exception:
             pass
+    _record_inflight_start(config)  # tool vai rodar agora (após a pausa)
     return 0
 
 

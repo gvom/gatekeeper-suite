@@ -12,4 +12,5 @@ __all__ = [
     "monitor",
     "recovery",
     "remote",
+    "inflight",
 ]

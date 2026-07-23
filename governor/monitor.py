@@ -24,6 +24,7 @@ from typing import Dict, Optional
 from .burn_rate import UsageBurnRateCalculator, UsageLimitPredictor
 from .config import GovernorConfig, ensure_governor_dir, load_config
 from .decision import PauseDecisionEngine
+from .inflight import InflightTracker
 from .metrics import MetricsUnavailable, UsageMetricsProvider, UsageSnapshot, UsageWindow
 from .recovery import SessionRecoveryManager
 from .remote import RemoteInteractionBridge, combined_notifier
@@ -133,11 +134,13 @@ class Monitor:
         engine: Optional[PauseDecisionEngine] = None,
         recovery: Optional[SessionRecoveryManager] = None,
         remote: Optional[RemoteInteractionBridge] = None,
+        inflight: Optional[InflightTracker] = None,
         clock=time.monotonic,
     ):
         self._config = config or load_config()
         self._clock = clock
         self._last_heartbeat: Optional[float] = None
+        self._inflight = inflight or InflightTracker(self._config)
         self._provider = provider or UsageMetricsProvider(self._config)
         self._store = store or GlobalPauseStateStore(self._config)
         self._burn = burn or UsageBurnRateCalculator(self._config)
@@ -202,7 +205,8 @@ class Monitor:
             self._burn.add_sample(max_util)
             rate = self._burn.burn_rate_per_min()
             minutes = self._predictor.minutes_to_100(max_util, rate)
-            decision = self._engine.decide(max_util, minutes, in_flight_requests=0)
+            in_flight = self._inflight.count()
+            decision = self._engine.decide(max_util, minutes, in_flight_requests=in_flight)
             if decision.should_pause:
                 reset_at = self._reset_at_iso(snapshot.window(pressure))
                 self._store.request_pause(decision.reason, decision.effective_utilization, reset_at)
@@ -236,6 +240,7 @@ class Monitor:
             self._notify("Governor: limite resetado; execução retomada automaticamente.")
             self._pause_window_name = None
             self._last_heartbeat = None
+            self._inflight.clear()  # descarta markers órfãos acumulados
             # Fallback assistido: se algum barrier desistiu (hook-morto), avisa o usuário
             # com o comando `claude --resume <id>` pronto.
             try:

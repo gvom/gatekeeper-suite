@@ -67,6 +67,9 @@ class GovernorConfig:
     reset_min_utilization_drop: float
     # --- notificação remota ---
     heartbeat_interval_ms: int
+    # --- in-flight (chamadas em andamento) ---
+    inflight_dir_path: str
+    inflight_ttl_ms: int
     # --- métricas ---
     metrics_cache_ttl_ms: int
     metrics_http_timeout_ms: int
@@ -103,6 +106,9 @@ def load_config() -> GovernorConfig:
         reset_min_utilization_drop=_env_float("GOVERNOR_RESET_MIN_UTILIZATION_DROP", 20.0),
         # intervalo do heartbeat "aguardando reset" enviado ao canal remoto (não spammar)
         heartbeat_interval_ms=_env_int("GOVERNOR_HEARTBEAT_INTERVAL_MS", 900_000),
+        # diretório de markers de chamadas em andamento + TTL para podar markers órfãos
+        inflight_dir_path=_env_path("GOVERNOR_INFLIGHT_DIR_PATH", "inflight"),
+        inflight_ttl_ms=_env_int("GOVERNOR_INFLIGHT_TTL_MS", 300_000),
         metrics_cache_ttl_ms=_env_int("GOVERNOR_METRICS_CACHE_TTL_MS", 15_000),
         metrics_http_timeout_ms=_env_int("GOVERNOR_METRICS_HTTP_TIMEOUT_MS", 12_000),
         state_file_path=_env_path("GOVERNOR_STATE_FILE_PATH", "state.json"),

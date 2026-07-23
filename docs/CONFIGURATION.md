@@ -49,6 +49,8 @@ Create a bot with @BotFather, get your chat id (e.g. via @userinfobot), then set
 | `GOVERNOR_MAX_ESTIMATED_USAGE_PER_IN_FLIGHT_REQUEST` | `1.0` | Conservative % per in-flight call. |
 | `GOVERNOR_RESET_MIN_UTILIZATION_DROP` | `20.0` | Min utilization drop (pts) to count as a reset. |
 | `GOVERNOR_HEARTBEAT_INTERVAL_MS` | `900000` | Min interval between "still paused" heartbeat notifications (remote). |
+| `GOVERNOR_INFLIGHT_DIR_PATH` | `<config>/governor/inflight` | Dir of in-flight tool-call markers. |
+| `GOVERNOR_INFLIGHT_TTL_MS` | `300000` | Max marker age before it's pruned (orphan cleanup). |
 | `GOVERNOR_HOOK_WAIT_TIMEOUT_MS` | `21000000` | Barrier safe cap (< the hook `timeout`). |
 | `GOVERNOR_RESET_CHECK_INTERVAL_MS` | `15000` | Barrier re-check interval while paused. |
 | `GOVERNOR_METRICS_CACHE_TTL_MS` | `15000` | Usage metrics cache TTL. |
@@ -72,9 +74,12 @@ would kill the hook.
   `gatekeeper_session.json` under the config dir, shared by all open Claude Code windows;
   autonomous mode is therefore effectively per-install. For the Governor this is correct —
   the usage limit is per-**account**, so global state is the right scope.
-- **In-flight consumption is not yet fed to the decision engine.** The engine accepts an
-  in-flight estimate, but the daemon currently passes `0` (burn-rate + safety margin cover the
-  gap). Feeding a real count would require a PreToolUse/PostToolUse counter — a future refinement.
+- **In-flight consumption is fed to the decision engine.** A PreToolUse marker (written by the
+  barrier when a tool is released to run) and a PostToolUse hook (`governor_inflight_end.py`,
+  removes the oldest marker) maintain an approximate count of concurrently-running tool calls.
+  The daemon adds `count * GOVERNOR_MAX_ESTIMATED_USAGE_PER_IN_FLIGHT_REQUEST` to the effective
+  utilization. Markers older than `GOVERNOR_INFLIGHT_TTL_MS` are pruned (orphan cleanup). Since
+  PreToolUse has no `tool_use_id`, pairing is FIFO/best-effort — a deliberate approximation.
 - **Live end-to-end pause→resume and the subagent barrier** rely on Claude Code honoring a long
   hook `timeout`; measured on v2.1.x (a 900s hold was not killed). Behavior may change in future
   Claude Code versions — fail-open and assisted `--resume` are the safety nets.

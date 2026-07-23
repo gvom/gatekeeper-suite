@@ -11,6 +11,7 @@ _PATH_ENVS = (
     "GOVERNOR_CHECKPOINT_PATH",
     "GOVERNOR_LOG_FILE_PATH",
     "GOVERNOR_LOCK_FILE_PATH",
+    "GOVERNOR_INFLIGHT_DIR_PATH",
 )
 _TUNING_ENVS = (
     "GOVERNOR_HOOK_WAIT_TIMEOUT_MS",
@@ -28,6 +29,7 @@ class GovernorTestCase(unittest.TestCase):
         os.environ["GOVERNOR_CHECKPOINT_PATH"] = os.path.join(self.tmpdir, "checkpoint.json")
         os.environ["GOVERNOR_LOG_FILE_PATH"] = os.path.join(self.tmpdir, "governor.log")
         os.environ["GOVERNOR_LOCK_FILE_PATH"] = os.path.join(self.tmpdir, "monitor.lock")
+        os.environ["GOVERNOR_INFLIGHT_DIR_PATH"] = os.path.join(self.tmpdir, "inflight")
         for k in _TUNING_ENVS:
             os.environ.pop(k, None)
         self.cfg = load_config()
