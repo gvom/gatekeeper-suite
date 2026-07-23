@@ -65,6 +65,8 @@ class GovernorConfig:
     reset_check_interval_ms: int
     # --- detecção de reset ---
     reset_min_utilization_drop: float
+    # --- notificação remota ---
+    heartbeat_interval_ms: int
     # --- métricas ---
     metrics_cache_ttl_ms: int
     metrics_http_timeout_ms: int
@@ -99,6 +101,8 @@ def load_config() -> GovernorConfig:
         reset_check_interval_ms=_env_int("GOVERNOR_RESET_CHECK_INTERVAL_MS", 15_000),
         # queda mínima de utilization (pontos %) p/ considerar reset por queda de uso
         reset_min_utilization_drop=_env_float("GOVERNOR_RESET_MIN_UTILIZATION_DROP", 20.0),
+        # intervalo do heartbeat "aguardando reset" enviado ao canal remoto (não spammar)
+        heartbeat_interval_ms=_env_int("GOVERNOR_HEARTBEAT_INTERVAL_MS", 900_000),
         metrics_cache_ttl_ms=_env_int("GOVERNOR_METRICS_CACHE_TTL_MS", 15_000),
         metrics_http_timeout_ms=_env_int("GOVERNOR_METRICS_HTTP_TIMEOUT_MS", 12_000),
         state_file_path=_env_path("GOVERNOR_STATE_FILE_PATH", "state.json"),

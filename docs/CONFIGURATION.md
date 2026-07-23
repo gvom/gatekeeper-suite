@@ -48,6 +48,7 @@ Create a bot with @BotFather, get your chat id (e.g. via @userinfobot), then set
 | `GOVERNOR_MINIMUM_SAMPLES_FOR_PREDICTION` | `3` | Below this, predictive rule is skipped. |
 | `GOVERNOR_MAX_ESTIMATED_USAGE_PER_IN_FLIGHT_REQUEST` | `1.0` | Conservative % per in-flight call. |
 | `GOVERNOR_RESET_MIN_UTILIZATION_DROP` | `20.0` | Min utilization drop (pts) to count as a reset. |
+| `GOVERNOR_HEARTBEAT_INTERVAL_MS` | `900000` | Min interval between "still paused" heartbeat notifications (remote). |
 | `GOVERNOR_HOOK_WAIT_TIMEOUT_MS` | `21000000` | Barrier safe cap (< the hook `timeout`). |
 | `GOVERNOR_RESET_CHECK_INTERVAL_MS` | `15000` | Barrier re-check interval while paused. |
 | `GOVERNOR_METRICS_CACHE_TTL_MS` | `15000` | Usage metrics cache TTL. |
@@ -64,3 +65,16 @@ would kill the hook.
 
 - `gk status` — backend chain + 5h/7d usage % + reset time + autonomous state.
 - `gk auto on|off|status` — toggle autonomous mode for the session.
+
+## Notes & known limitations
+
+- **Session state is per-install, not per-window.** The gatekeeper keeps a single
+  `gatekeeper_session.json` under the config dir, shared by all open Claude Code windows;
+  autonomous mode is therefore effectively per-install. For the Governor this is correct —
+  the usage limit is per-**account**, so global state is the right scope.
+- **In-flight consumption is not yet fed to the decision engine.** The engine accepts an
+  in-flight estimate, but the daemon currently passes `0` (burn-rate + safety margin cover the
+  gap). Feeding a real count would require a PreToolUse/PostToolUse counter — a future refinement.
+- **Live end-to-end pause→resume and the subagent barrier** rely on Claude Code honoring a long
+  hook `timeout`; measured on v2.1.x (a 900s hold was not killed). Behavior may change in future
+  Claude Code versions — fail-open and assisted `--resume` are the safety nets.

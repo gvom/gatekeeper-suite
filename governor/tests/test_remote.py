@@ -75,6 +75,30 @@ class TestMonitorRemoteEvents(GovernorTestCase):
         fp.set(20.0, base); m.run_once()
         self.assertTrue(any("retomada" in t for t in rec.sent_texts()))
 
+    def test_waiting_heartbeat_throttled(self):
+        os.environ["GOVERNOR_HEARTBEAT_INTERVAL_MS"] = "1000"  # 1s
+        cfg = self.reload_cfg()
+        store = GlobalPauseStateStore(cfg)
+        rec = TelegramRecorder()
+        bridge = RemoteInteractionBridge(cfg, enabled=True, transport=rec, chat_id=CHAT, timeout=1)
+        fp = FakeProvider()
+        t = {"v": 100.0}
+        m = Monitor(config=cfg, provider=fp, store=store, remote=bridge, clock=lambda: t["v"])
+        base = base_dt()
+
+        def hb():
+            return sum(1 for x in rec.sent_texts() if "ainda pausado" in x)
+
+        fp.set(96.0, base); m.run_once()            # pausa; heartbeat marcado em t=100
+        t["v"] = 100.5; fp.set(96.0, base); m.run_once()   # +0.5s < 1s → sem heartbeat
+        self.assertEqual(hb(), 0)
+        t["v"] = 101.2; fp.set(96.0, base); m.run_once()   # +1.2s ≥ 1s → heartbeat
+        self.assertEqual(hb(), 1)
+        t["v"] = 101.3; fp.set(96.0, base); m.run_once()   # logo após → throttled
+        self.assertEqual(hb(), 1)
+        t["v"] = 102.5; fp.set(96.0, base); m.run_once()   # +interval → 2º heartbeat
+        self.assertEqual(hb(), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -133,8 +133,11 @@ class Monitor:
         engine: Optional[PauseDecisionEngine] = None,
         recovery: Optional[SessionRecoveryManager] = None,
         remote: Optional[RemoteInteractionBridge] = None,
+        clock=time.monotonic,
     ):
         self._config = config or load_config()
+        self._clock = clock
+        self._last_heartbeat: Optional[float] = None
         self._provider = provider or UsageMetricsProvider(self._config)
         self._store = store or GlobalPauseStateStore(self._config)
         self._burn = burn or UsageBurnRateCalculator(self._config)
@@ -205,6 +208,7 @@ class Monitor:
                 self._store.request_pause(decision.reason, decision.effective_utilization, reset_at)
                 self._store.mark_waiting_for_reset(decision.effective_utilization, reset_at)
                 self._pause_window_name = pressure
+                self._last_heartbeat = self._clock()
                 _log(
                     self._config,
                     f"PAUSE reason={decision.reason} window={pressure} "
@@ -231,6 +235,7 @@ class Monitor:
             _log(self._config, f"RESUME ({reason}) window={watch} util={win.utilization if win else None}")
             self._notify("Governor: limite resetado; execução retomada automaticamente.")
             self._pause_window_name = None
+            self._last_heartbeat = None
             # Fallback assistido: se algum barrier desistiu (hook-morto), avisa o usuário
             # com o comando `claude --resume <id>` pronto.
             try:
@@ -244,6 +249,17 @@ class Monitor:
                 self._config,
                 f"still paused window={watch} util={win.utilization if win else None}",
             )
+            # Heartbeat "aguardando reset" — moderado, para não spammar o canal remoto.
+            now = self._clock()
+            if self._last_heartbeat is None:
+                self._last_heartbeat = now
+            elif (now - self._last_heartbeat) * 1000.0 >= self._config.heartbeat_interval_ms:
+                self._last_heartbeat = now
+                util = win.utilization if win else None
+                reset_at = self._reset_at_iso(win)
+                self._notify(
+                    f"Governor: ainda pausado (uso {util}%); reset previsto para {reset_at or 'desconhecido'}."
+                )
 
     def run(self) -> int:
         lock = SingleInstanceLock(self._config.lock_file_path)
