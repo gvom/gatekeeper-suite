@@ -61,7 +61,7 @@ The **daemon** is the only component that polls the usage endpoint, off the crit
 ## Quickstart
 
 ```bash
-git clone https://github.com/<you>/gatekeeper-suite.git
+git clone https://github.com/gvom/gatekeeper-suite.git
 cd gatekeeper-suite
 python install.py                 # copies hooks, installs deps, merges settings.json safely
 cp .env.example .env              # fill in your keys (all optional to start)
