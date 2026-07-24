@@ -4101,7 +4101,231 @@ def _sanitize_decision(decision: str, reason: str) -> Tuple[str, str]:
         return FALLBACK_DECISION, f"[Sanitized] {reason}"
     return decision, reason
 
-def build_output(hook_event: str, decision: str, reason: str) -> dict:
+# ─── Modo autônomo v8.3: pisos de execução + resolver ────────────────────────
+# Com o modo autônomo ativo, decisões-base 'ask'/'deny' passam por um resolver que
+# decide approve / rewrite (Mec.2 transparente via updatedInput ou Mec.1 deny+alternativa)
+# / stop — sem humano. Um GATE DETERMINÍSTICO por piso barra categorias inegociáveis
+# ANTES do LLM; baixo/médio segue o fast-path clássico (allow sem LLM); só risco
+# alto/vetado LIBERADO pelo piso chama o resolver. Toda reescrita é re-validada pelo
+# classificador estático. Fail-safe: resolver indisponível/erro → mantém ask/deny.
+_FLOORS = ("strict", "balanced", "open")
+_FLOOR_ALIASES = {
+    "1": "strict", "2": "balanced", "3": "open",
+    "safe": "strict", "rigido": "strict", "rígido": "strict",
+    "yolo": "open", "unsafe": "open", "full": "open",
+}
+_FLOOR_LEGEND = {
+    "strict":   "resolve o rotineiro; para em exfiltracao, segredos, sudo/sistema e destruicao fora do projeto",
+    "balanced": "resolve mais; para so em exfiltracao e destruicao fora do projeto",
+    "open":     "resolve tudo, sem freio deterministico -- use com consciencia",
+}
+# Categorias que cada piso NUNCA resolve (hard-stop → mantém ask/deny/remoto).
+_FLOOR_BLOCKS = {
+    "strict":   {"exfil", "destroy_outside", "privilege_system", "secrets", "unparseable"},
+    "balanced": {"exfil", "destroy_outside"},
+    "open":     set(),
+}
+
+def _normalize_floor(value) -> str:
+    """Normaliza nome/alias/numero de piso. Ausente/invalido → 'strict' (default seguro)."""
+    if not value:
+        return "strict"
+    v = str(value).strip().lower()
+    v = _FLOOR_ALIASES.get(v, v)
+    if v not in _FLOORS:
+        log(f"[AUTO] piso desconhecido {value!r}; usando 'strict'")
+        return "strict"
+    return v
+
+def _auto_floor(session_id: str = "", data: Optional[dict] = None) -> str:
+    """Piso ativo. Precedência: session-file → env GATEKEEPER_AUTO_FLOOR → 'strict'."""
+    if data is None and session_id:
+        try:
+            data = _load_session(session_id)
+        except Exception:
+            data = None
+    val = data.get("auto_floor") if isinstance(data, dict) else None
+    if not val:
+        val = os.getenv("GATEKEEPER_AUTO_FLOOR")
+    return _normalize_floor(val)
+
+def _rm_target_scope(command: str, cwd: str) -> str:
+    """'inside' só se TODOS os alvos de rm forem relativos ao cwd sem escapar; senão 'outside' (conservador)."""
+    try:
+        toks = command.replace("\t", " ").split()
+    except Exception:
+        return "outside"
+    skip = {"rm", "sudo", "&&", "||", ";", "|", "-", "--"}
+    targets = [t for t in toks if t and not t.startswith("-") and t not in skip]
+    if not targets:
+        return "outside"
+    for t in targets:
+        tl = t.strip('"').strip("'")
+        if (tl.startswith("/") or tl.startswith("~") or tl.startswith("$")
+                or ".." in tl or re.match(r"^[A-Za-z]:[\\/]", tl)
+                or tl in ("*", ".", "..", "./*")):
+            return "outside"
+    return "inside"
+
+def _floor_categories(event: dict) -> set:
+    """Categorias de risco presentes no evento, para o gate de piso."""
+    tn, ti = _resolve_tool_info(event)
+    cwd = event.get("cwd", "") or ""
+    cats: set = set()
+    if tn == "Bash" and isinstance(ti, dict):
+        cmd = ti.get("command", "") or ""
+        if windows_danger_reason(cmd):
+            cats.add("privilege_system")
+        feats, _t, parse_ok = _extract_features(cmd)
+        if not parse_ok or feats.get("parse_error"):
+            cats.add("unparseable")
+        if feats.get("has_network"):
+            cats.add("exfil")
+        if feats.get("has_sudo"):
+            cats.add("privilege_system")
+        if feats.get("touches_sensitive"):
+            cats.add("secrets")
+        if feats.get("has_eval_exec") or feats.get("obfuscation_score") or feats.get("pipe_to_shell"):
+            cats.add("eval_obfusc_pipe")
+        if feats.get("has_rm") or feats.get("has_rm_recursive"):
+            cats.add("destroy_inside" if _rm_target_scope(cmd, cwd) == "inside" else "destroy_outside")
+    elif tn in ("Edit", "Write", "MultiEdit") and isinstance(ti, dict):
+        fp = ti.get("file_path") or ti.get("path") or ""
+        if fp and is_sensitive_word(fp):
+            cats.add("secrets")
+        try:
+            absf = os.path.normpath(os.path.join(cwd, fp)) if fp else ""
+            if absf and not _is_within_project(absf, cwd):
+                cats.add("destroy_outside")
+        except Exception:
+            cats.add("destroy_outside")
+    return cats
+
+def _floor_hard_stop(event: dict, floor: str) -> Optional[str]:
+    """Motivo se o evento bate no núcleo inegociável do piso; None se o resolver pode agir."""
+    hit = _floor_categories(event) & _FLOOR_BLOCKS.get(floor, _FLOOR_BLOCKS["strict"])
+    return ("categoria inegociavel no piso '%s': %s" % (floor, ", ".join(sorted(hit)))) if hit else None
+
+def _build_resolver_system() -> str:
+    return (
+        "Voce e o RESOLVEDOR de seguranca do gatekeeper em modo autonomo. Recebe uma acao que o "
+        "guardiao marcou como 'ask/deny' e o objetivo da sessao. Decida SEM humano.\n"
+        'Responda SOMENTE JSON: {"verdict":"approve|rewrite|stop","tool":"same|other",'
+        '"command":"<comando seguro se rewrite e tool=same>","reason":"..."}\n'
+        "- approve: seguro/alinhado ao objetivo e reversivel.\n"
+        "- rewrite: existe alternativa equivalente e MAIS SEGURA. So trocar o comando Bash → tool=same "
+        "+ 'command'. Exige outra ferramenta/estrategia → tool=other e explique em 'reason'.\n"
+        "- stop: perigoso/irreversivel sem alternativa segura.\n"
+        "NUNCA proponha exfiltracao, sudo, apagar fora do projeto, ou ler/gravar segredos."
+    )
+
+def _build_resolver_prompt(event: dict, base_reason: str, floor: str) -> str:
+    tn, ti = _resolve_tool_info(event)
+    if tn == "Bash" and isinstance(ti, dict):
+        detail = "Comando: " + redact(str(ti.get("command", ""))[:600])
+    elif isinstance(ti, dict):
+        detail = "Alvo: " + redact(str(ti.get("file_path") or ti.get("path") or "")[:300])
+    else:
+        detail = ""
+    return (
+        f"Ferramenta: {tn}\n{detail}\n"
+        f"Motivo do guardiao (por que caiu em ask/deny): {base_reason[:400]}\n"
+        f"Piso ativo: {floor} ({_FLOOR_LEGEND.get(floor, '')}).\n"
+        "Decida approve/rewrite/stop conforme as regras do sistema."
+    )
+
+def _parse_resolver_response(content: str) -> Optional[dict]:
+    if not content:
+        return None
+    obj = None
+    try:
+        obj = json.loads(content)
+    except Exception:
+        m = re.search(r"\{.*\}", content, re.DOTALL)
+        if m:
+            try:
+                obj = json.loads(m.group(0))
+            except Exception:
+                obj = None
+    if not isinstance(obj, dict):
+        return None
+    verdict = str(obj.get("verdict", "")).strip().lower()
+    if verdict not in ("approve", "rewrite", "stop"):
+        return None
+    return {
+        "verdict": verdict,
+        "tool": str(obj.get("tool", "same")).strip().lower(),
+        "command": str(obj.get("command", "") or ""),
+        "reason": str(obj.get("reason", "") or "")[:400],
+    }
+
+def _resolver_llm_call(event: dict, base_reason: str, floor: str, timeout: Optional[int] = None) -> Optional[dict]:
+    """Consulta a cadeia de backends (SEM headless, p/ não consumir o limite da conta). None em falha."""
+    _timeout = timeout if timeout is not None else min(REQUEST_TIMEOUT, 30)
+    try:
+        system = _build_resolver_system()
+        prompt = _build_resolver_prompt(event, base_reason, floor)
+    except Exception:
+        return None
+    chain = _build_backend_chain()
+    if not chain or _circuit_is_open():
+        return None
+    deadline = time.time() + _timeout
+    for backend in chain:
+        remaining = deadline - time.time()
+        if remaining < 5:
+            break
+        if backend == "ollama" and not _ollama_is_reachable():
+            continue
+        try:
+            per_to = max(5, int(min(remaining, PER_BACKEND_TIMEOUT)))
+            content = _dispatch_backend(backend, system, prompt, per_to)
+            verdict = _parse_resolver_response(content)
+            if verdict:
+                _circuit_success()
+                return verdict
+        except Exception as e:
+            _circuit_failure()
+            log(f"[RESOLVER] backend {backend!r} falhou: {type(e).__name__}: {e}")
+            continue
+    return None
+
+def _autonomous_resolve(event: dict, base_decision: str, base_reason: str):
+    """(decision, reason, updated_input) ou None (hard-stop/fail-safe → manter ask/deny atual)."""
+    sid = event.get("session_id", "")
+    floor = _auto_floor(sid)
+    if _floor_hard_stop(event, floor):
+        log(f"[AUTO-RESOLVE] hard-stop no piso '{floor}'; mantem {base_decision}")
+        return None
+    tier = _risk_tier(event)
+    # Fast-path clássico: 'ask' de risco baixo/médio → allow direto (sem LLM).
+    if base_decision == "ask" and tier not in ("veto", "high"):
+        return ("allow", f"[AUTO-ALLOW|piso={floor}] risco {tier}: {base_reason}", None)
+    # Risco alto/vetado PORÉM liberado pelo piso (ou base 'deny') → resolver decide.
+    verdict = _resolver_llm_call(event, base_reason, floor)
+    if not verdict:
+        log(f"[AUTO-RESOLVE] resolver indisponivel (piso={floor}); fail-safe → mantem {base_decision}")
+        return None
+    v = verdict["verdict"]
+    if v == "approve":
+        return ("allow", f"[AUTO-RESOLVE approve|piso={floor}] {verdict['reason'] or base_reason}", None)
+    if v == "stop":
+        return ("deny", f"[AUTO-RESOLVE stop|piso={floor}] {verdict['reason'] or base_reason}", None)
+    # rewrite
+    tn, _ti = _resolve_tool_info(event)
+    cmd = verdict["command"].strip()
+    if verdict["tool"] == "same" and tn == "Bash" and cmd:
+        rtier = _command_risk_tier(cmd)
+        safe_event = dict(event); safe_event["tool_name"] = "Bash"; safe_event["tool_input"] = {"command": cmd}
+        if _RISK_ORDER.get(rtier, 4) <= _RISK_ORDER["medium"] and not _floor_hard_stop(safe_event, floor):
+            log(f"[AUTO-RESOLVE] rewrite transparente (piso={floor}, risco={rtier})")
+            return ("allow", f"[AUTO-RESOLVE rewrite|piso={floor}] {verdict['reason']}", {"command": cmd})
+        log(f"[AUTO-RESOLVE] rewrite rejeitada pela re-validacao (risco={rtier}); vira steer")
+    # muda de ferramenta ou reescrita insegura → steer (Mec.1: modelo re-planeja)
+    return ("deny", f"[AUTO-RESOLVE steer|piso={floor}] {verdict['reason'] or 'siga por alternativa mais segura'}", None)
+
+
+def build_output(hook_event: str, decision: str, reason: str, updated_input: Optional[dict] = None) -> dict:
     decision, reason = _sanitize_decision(decision, reason)
     annotated = f"[Gatekeeper v{HOOK_VERSION}] {reason}"
 
@@ -4137,6 +4361,9 @@ def build_output(hook_event: str, decision: str, reason: str) -> dict:
             "permissionDecisionReason": annotated,
         }
     }
+    # Mec.2 (rewrite transparente): allow reescrevendo o input da ferramenta.
+    if decision == "allow" and isinstance(updated_input, dict) and updated_input:
+        out["hookSpecificOutput"]["updatedInput"] = updated_input
     # deny nao interrompe o agente: injeta a alternativa acionavel via additionalContext
     # para que o Claude Code prossiga por outro caminho (Fase 4 v8.2).
     if decision == "deny":
@@ -4309,11 +4536,12 @@ def remote_ask(event: dict, tool_name: str, tool_input: dict,
     return "ask", reason
 
 # ─── CLI (toggle mid-sessao, sem stdin) ──────────────────────────────────────
-def _apply_autonomous(sid: Optional[str], sub: str) -> str:
+def _apply_autonomous(sid: Optional[str], sub: str, floor: Optional[str] = None) -> str:
     """Aplica on/off/status do modo autonomo p/ a sessao `sid`. Retorna mensagem.
 
-    Reusada pelo CLI (`autonomous on`), pelo comando de chat (`gk auto on`) e pelo
+    Reusada pelo CLI (`autonomous on`), pelo comando de chat (`gk auto on [nivel]`) e pelo
     botao remoto (Telegram). Se `sid` vier vazio, cai para o session_id do arquivo.
+    `floor` (opcional): piso de execucao (strict|balanced|open, ou alias).
     """
     data: dict = {}
     try:
@@ -4329,17 +4557,60 @@ def _apply_autonomous(sid: Optional[str], sub: str) -> str:
     if sub in ("on", "enable", "true", "1"):
         data["session_id"] = sid
         data["autonomous"] = {"enabled": True, "sig": _autonomous_sig(sid), "ts": time.time()}
+        if floor:
+            data["auto_floor"] = _normalize_floor(floor)
+        fl = _auto_floor(sid, data)
         _save_session_full(sid, data.get("history", []), data)
         ttl = f" (expira em ~{AUTONOMOUS_TTL // 60} min)" if AUTONOMOUS_TTL else ""
-        return (f"[OK] Modo autonomo ATIVADO para a sessao {sid[:8]}{ttl}. "
-                "Acoes de risco alto/vetado (rm -rf, sudo, .env/segredos, exfiltracao, "
-                "PowerShell perigoso) AINDA pedem confirmacao.")
+        return (f"[OK] Modo autonomo ATIVADO (sessao {sid[:8]}{ttl}) -- piso '{fl}': "
+                f"{_FLOOR_LEGEND[fl]}. Troque com 'gk floor <nivel>'.")
     if sub in ("off", "disable", "false", "0"):
         data.pop("autonomous", None)
         _save_session_full(sid, data.get("history", []), data)
         return f"[OK] Modo autonomo DESATIVADO para a sessao {sid[:8]}."
     active = _is_autonomous(sid, data)
-    return f"Modo autonomo: {'ATIVO' if active else 'inativo'} (sessao {sid[:8]})."
+    fl = _auto_floor(sid, data)
+    return f"Modo autonomo: {'ATIVO' if active else 'inativo'} (sessao {sid[:8]}) | piso '{fl}'."
+
+
+def _apply_floor(sid: Optional[str], floor: Optional[str] = None) -> str:
+    """Mostra (sem arg) ou troca o piso de execucao do modo autonomo. Sempre ecoa a legenda."""
+    data: dict = {}
+    try:
+        if os.path.exists(SESSION_FILE):
+            with open(SESSION_FILE, encoding="utf-8") as f:
+                data = json.load(f)
+    except Exception as e:
+        return f"[ERRO] nao foi possivel ler a sessao: {e}"
+    sid = sid or data.get("session_id")
+    if not sid:
+        return "[!] Nenhuma sessao ativa. Rode um comando no Claude Code primeiro."
+    if not floor:
+        fl = _auto_floor(sid, data)
+        niveis = " | ".join(f"{k} ({_FLOOR_LEGEND[k]})" for k in _FLOORS)
+        return f"Piso atual: '{fl}' -- {_FLOOR_LEGEND[fl]}.\nNiveis: {niveis}"
+    fl = _normalize_floor(floor)
+    data["session_id"] = sid
+    data["auto_floor"] = fl
+    _save_session_full(sid, data.get("history", []), data)
+    return f"[OK] Piso de execucao definido: '{fl}' -- {_FLOOR_LEGEND[fl]}."
+
+
+def _help_report() -> str:
+    """Ajuda dos comandos de chat `gk` + legenda dos pisos."""
+    lines = [
+        "Gatekeeper -- comandos (digite no chat):",
+        "  gk status              visao geral (backend, uso, piso)",
+        "  gk auto on [nivel]     liga o modo autonomo (default: strict)",
+        "  gk auto off | status   desliga / consulta",
+        "  gk floor [nivel]       mostra ou troca o piso de execucao",
+        "  gk help                esta ajuda",
+        "Pisos de execucao (modo autonomo):",
+    ]
+    for k in _FLOORS:
+        lines.append(f"  {k:9} {_FLOOR_LEGEND[k]}")
+    lines.append("Aliases: 1/2/3, safe->strict, yolo|unsafe->open")
+    return "\n".join(lines)
 
 
 def _cli_dispatch(argv: List[str]) -> None:
@@ -4367,7 +4638,7 @@ def _cli_dispatch(argv: List[str]) -> None:
 #   gk auto [on|off|status]  → modo autonomo por sessao
 #   gk status                → painel: backend + % de uso (5h/7d) + reset + autonomo
 _PROMPT_CMD_RE = re.compile(
-    r'^\s*/?gk\s+(auto|status)(?:\s+(on|off|status|enable|disable))?\s*$', re.IGNORECASE)
+    r'^\s*/?gk(?:\s+(auto|status|floor|help|\?|--help)(?:\s+\S+)*)?\s*$', re.IGNORECASE)
 
 def _fetch_oauth_usage(timeout: int = 10) -> dict:
     """Busca o uso da janela via endpoint OAuth do Claude Code. Fail-safe.
@@ -4422,7 +4693,8 @@ def _status_report(event: dict, usage: Optional[dict] = None) -> str:
                 lines.append(f"  Uso {label}: {float(w['utilization']):.0f}% "
                              f"(reset {_fmt_reset(w.get('resets_at'))})")
     sid = event.get("session_id", "")
-    lines.append(f"  Modo autonomo: {'ATIVO' if _is_autonomous(sid) else 'inativo'}")
+    fl = _auto_floor(sid)
+    lines.append(f"  Modo autonomo: {'ATIVO' if _is_autonomous(sid) else 'inativo'} | piso '{fl}' ({_FLOOR_LEGEND[fl]})")
     return "\n".join(lines)
 
 def _handle_prompt_command(event: dict) -> Optional[str]:
@@ -4430,15 +4702,25 @@ def _handle_prompt_command(event: dict) -> Optional[str]:
     prompt = event.get("prompt") or event.get("user_prompt") or event.get("prompt_text") or ""
     if not isinstance(prompt, str):
         return None
-    m = _PROMPT_CMD_RE.match(prompt)
-    if not m:
+    if not _PROMPT_CMD_RE.match(prompt):
         return None
-    verb = m.group(1).lower()
+    parts = prompt.strip().lstrip("/").split()
+    verb = parts[1].lower() if len(parts) > 1 else "help"
+    sid = event.get("session_id", "")
+    if verb in ("help", "?", "--help"):
+        return _help_report()
     if verb == "status":
         return _status_report(event)
-    # verb == "auto"
-    sid = event.get("session_id", "")
-    return _apply_autonomous(sid, m.group(2) or "status")
+    if verb == "floor":
+        return _apply_floor(sid, parts[2] if len(parts) > 2 else None)
+    if verb == "auto":
+        sub = parts[2].lower() if len(parts) > 2 else "status"
+        # atalho: "gk auto <nivel>" liga já no piso indicado
+        if sub in _FLOORS or sub in _FLOOR_ALIASES:
+            return _apply_autonomous(sid, "on", floor=sub)
+        floor = parts[3] if len(parts) > 3 else None
+        return _apply_autonomous(sid, sub, floor=floor)
+    return _help_report()
 
 # ─── Entrada principal ───────────────────────────────────────────────────────
 def main() -> None:
@@ -4492,33 +4774,38 @@ def main() -> None:
             log(f"Traceback:\n{tb_str}")
             decision, reason = FALLBACK_DECISION, f"fallback após erro: {e}"
 
-    # ── Pós-processamento de 'ask': modo autônomo → ask remoto → hint ──────────
-    if decision == "ask":
+    # ── Pós-processamento de 'ask'/'deny': resolver autônomo → ask remoto → hint ──
+    updated_input: Optional[dict] = None
+    if decision in ("ask", "deny"):
         sid = event.get("session_id", "")
         _tn, _ti = _resolve_tool_info(event)
         ev_risk = dict(event); ev_risk["tool_name"] = _tn; ev_risk["tool_input"] = _ti
         tier = _risk_tier(ev_risk)
         vetoed = tier in ("veto", "high")
 
-        if _is_autonomous(sid) and not vetoed:
-            log(f"[AUTO-ALLOW] modo autonomo rebaixou ask→allow (risco={tier})")
-            decision = "allow"
-            reason = f"[AUTO-ALLOW] modo autonomo ativo (risco {tier}): {reason}"
-        elif REMOTE_ENABLED:
-            # Ask remoto: pergunta ao dono; silêncio/erro → mantém ask local.
-            try:
-                rdecision, rreason = remote_ask(ev_risk, _tn, _ti, tier, reason)
-                if rdecision in ("allow", "ask", "deny"):
-                    decision, reason = rdecision, rreason
-            except Exception as e:
-                log(f"AVISO remote_ask: {type(e).__name__}: {e}")
-            if decision == "ask":
-                reason = reason + (_autonomous_hint() if not _is_autonomous(sid) else "")
-        else:
-            if _is_autonomous(sid) and vetoed:
-                reason = reason + " | modo autonomo NAO cobre acoes de risco alto/vetado."
+        # Modo autônomo: o resolver decide approve/rewrite/stop (com gate por piso + fail-safe).
+        if _is_autonomous(sid):
+            res = _autonomous_resolve(ev_risk, decision, reason)
+            if res is not None:
+                decision, reason, updated_input = res
+                log(f"[AUTO-RESOLVE] {decision} (piso={_auto_floor(sid)})")
+
+        # Se ainda 'ask' (resolver não agiu / hard-stop / fail-safe): comportamento clássico.
+        if decision == "ask":
+            if REMOTE_ENABLED:
+                try:
+                    rdecision, rreason = remote_ask(ev_risk, _tn, _ti, tier, reason)
+                    if rdecision in ("allow", "ask", "deny"):
+                        decision, reason = rdecision, rreason
+                except Exception as e:
+                    log(f"AVISO remote_ask: {type(e).__name__}: {e}")
+                if decision == "ask":
+                    reason = reason + (_autonomous_hint() if not _is_autonomous(sid) else "")
             else:
-                reason = reason + _autonomous_hint()
+                if _is_autonomous(sid) and vetoed:
+                    reason = reason + f" | modo autonomo (piso {_auto_floor(sid)}) nao cobre esta acao (nucleo inegociavel)."
+                else:
+                    reason = reason + _autonomous_hint()
 
     log(f"← {decision} | {reason}")
 
@@ -4527,7 +4814,7 @@ def main() -> None:
     except Exception as e:
         log(f"AVISO record_decision: {e}")
 
-    output = build_output(hook_event, decision, reason)
+    output = build_output(hook_event, decision, reason, updated_input)
     if output:
         try:
             print(json.dumps(output, ensure_ascii=False))

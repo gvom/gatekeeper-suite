@@ -70,6 +70,42 @@ python gatekeeper/gatekeeper.py validate   # sanity check
 
 Then in Claude Code, type `gk status` to see your current usage and backend.
 
+## Autonomous mode & execution floors
+
+Turn it on in chat with `gk auto on` (or `gk auto on <floor>`). While autonomous, any decision
+that would normally be `ask`/`deny` goes through a **resolver** that decides — with no human:
+
+- **approve** — the action is safe/aligned → allow.
+- **rewrite** — an equivalent, safer alternative exists → either rewrite the Bash command
+  *transparently* (via the hook's `updatedInput`, no extra model turn) or `deny` with the
+  alternative so the model self-corrects. Every rewrite is **re-validated** by the static risk
+  classifier before it can run.
+- **stop** — genuinely dangerous/irreversible with no safe alternative → `deny`.
+
+A **deterministic floor** hard-stops the non-negotiable categories *before* the resolver runs.
+Low/medium routine actions take the classic fast path (allow, no LLM). If the resolver is
+unavailable it **fails safe** back to `ask`. Type `gk help` any time.
+
+**Execution floors** (`gk floor <name>`, or `GATEKEEPER_AUTO_FLOOR`; default **`strict`**):
+
+| Category | `strict` (default) | `balanced` | `open` |
+|---|:---:|:---:|:---:|
+| Exfiltration (outbound network/data egress) | 🛑 stop | 🛑 stop | resolver |
+| Destruction **outside** the project (`rm -rf ~`, `/`, abs. paths) | 🛑 stop | 🛑 stop | resolver |
+| `sudo` / system changes / dangerous PowerShell | 🛑 stop | resolver | resolver |
+| Secrets (`.env`, credentials) | 🛑 stop | resolver | resolver |
+| Non-parseable command (not statically verifiable) | 🛑 stop | resolver | resolver |
+| `eval`/`exec`, obfuscation, pipe-to-shell (in project) | resolver | resolver | resolver |
+| `rm` **inside** the project | resolver | resolver | resolver |
+
+- **`strict`** — resolves routine work; stops on exfiltration, secrets, sudo/system and
+  destruction outside the project.
+- **`balanced`** — resolves more; stops only on exfiltration and destruction outside the project.
+- **`open`** — resolves everything, no deterministic floor. Use consciously.
+
+Aliases accepted: `1/2/3`, `safe`→`strict`, `yolo`/`unsafe`→`open`. Any unset/invalid value
+falls back to **`strict`**.
+
 ## Documentation
 
 - [docs/INSTALL.md](docs/INSTALL.md) — install, verify, uninstall

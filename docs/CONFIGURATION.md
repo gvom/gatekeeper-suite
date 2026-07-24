@@ -17,6 +17,8 @@ All configuration is via environment variables. Nothing is hardcoded.
 | `GATEKEEPER_CLAUDE_HEADLESS` | `true` | Allow the headless `claude -p` fallback (consumes account limit). |
 | `GATEKEEPER_SMART_REVIEW` | `true` | Enable smarter static+LLM review. |
 | `GATEKEEPER_FAILOPEN_MAX_RISK` | `medium` | Max risk tier auto-allowed on guard failure. |
+| `GATEKEEPER_AUTO_FLOOR` | `strict` | Autonomous execution floor: `strict` \| `balanced` \| `open` (aliases: `1/2/3`, `safe`, `yolo`/`unsafe`). Unset/invalid → `strict`. |
+| `GATEKEEPER_AUTONOMOUS_TTL` | `3600` | Seconds the autonomous flag stays valid (0 = no expiry). |
 
 ### Getting free keys
 
@@ -65,8 +67,14 @@ would kill the hook.
 
 ## In-chat commands (gatekeeper)
 
-- `gk status` — backend chain + 5h/7d usage % + reset time + autonomous state.
-- `gk auto on|off|status` — toggle autonomous mode for the session.
+- `gk help` — list commands + the execution-floor legend.
+- `gk status` — backend chain + 5h/7d usage % + reset time + autonomous state + active floor.
+- `gk auto on [strict|balanced|open]` — enable autonomous mode (default floor `strict`); `gk auto strict` is a shortcut for on+floor.
+- `gk auto off | status` — disable / query.
+- `gk floor [strict|balanced|open]` — show or change the execution floor (echoes the legend).
+
+See [the README](../README.md#autonomous-mode--execution-floors) for how the resolver and floors
+decide approve / rewrite / stop.
 
 ## Notes & known limitations
 
