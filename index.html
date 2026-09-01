@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' https://telegram.org; connect-src https:; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors https://web.telegram.org https://*.telegram.org">
+  <title>Gatekeeper Suite</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header id="topbar">
+    <span id="title">Gatekeeper Suite</span>
+    <span id="badge" class="badge" hidden></span>
+  </header>
+  <main id="screen" aria-live="polite">
+    <p id="loading">Conectando…</p>
+  </main>
+  <footer id="foot" hidden>
+    <button id="btn-close" type="button">Fechar</button>
+  </footer>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
