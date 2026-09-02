@@ -83,9 +83,57 @@
     var b = document.getElementById('badge'); b.textContent = text || ''; b.hidden = !text;
   }
 
+  // Render de markdown MINIMO e seguro: paragrafos, titulos (#), listas (-/*) e blocos ```.
+  // Tudo via textContent/createElement — nunca monta HTML por string: o plano e texto do dono,
+  // mas passa por um webview publico e a CSP nao tem unsafe-inline.
+  function renderMarkdownInto(root, text) {
+    var lines = String(text || '').split(/\r?\n/);
+    var pre = null;
+    var list = null;
+    lines.forEach(function (line) {
+      if (line.indexOf('```') === 0) {
+        if (pre) { root.appendChild(pre); pre = null; }
+        else { list = null; pre = document.createElement('pre'); }
+        return;
+      }
+      if (pre) { pre.textContent += line + '\n'; return; }
+      var titulo = /^(#{1,6})\s+(.*)$/.exec(line);
+      if (titulo) {
+        list = null;
+        var elTitulo = document.createElement('h' + Math.min(6, titulo[1].length + 1));
+        elTitulo.textContent = titulo[2]; root.appendChild(elTitulo);
+        return;
+      }
+      var item = /^\s*[-*]\s+(.*)$/.exec(line);
+      if (item) {
+        if (!list) { list = document.createElement('ul'); root.appendChild(list); }
+        var li = document.createElement('li'); li.textContent = item[1]; list.appendChild(li);
+        return;
+      }
+      list = null;
+      if (line.trim() === '') return;
+      var p = document.createElement('p'); p.textContent = line; root.appendChild(p);
+    });
+    if (pre) root.appendChild(pre);
+  }
+
   // Registro de telas: plano 01 Task 10 preenche status/config; plano 02 preenche plan/question/permission.
   var SCREENS = {};
   window.GK_SCREENS = SCREENS;
+
+  // Fase 5 (Task 4): leitura integral do plano. `window.__planCurrent` guarda o ultimo payload
+  // para a Fase 6c (Task 13) acrescentar os botoes de decisao sem refazer o fetch.
+  SCREENS.plan = function (ctx, root, h) {
+    h.api(ctx, 'GET', 'plan/current').then(function (json) {
+      var meta = h.el('p', 'meta', 'Rodada ' + json.round + ' · hash ' +
+        String(json.hash).slice(0, 12) + ' · ' + json.plan.length + ' caracteres');
+      root.appendChild(meta);
+      var body = document.createElement('article');
+      renderMarkdownInto(body, json.plan);
+      root.appendChild(body);
+      window.__planCurrent = json;
+    }).catch(function () { h.fallback(); });
+  };
 
   function renderScreen(ctx) {
     var s = screenNode(); clear(s);
