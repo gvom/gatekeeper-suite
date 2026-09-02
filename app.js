@@ -14,12 +14,18 @@
           close: 'Fechar', badApi: 'Endereço da API inválido.', notTelegram: 'Abra pelo Telegram.',
           home: 'Mini App conectada.', preparing: 'Tela em preparação — use o chat.',
           proto: 'Versão do app e do servidor não batem. Atualize.',
-          status: 'Status', config: 'Configuração', plan: 'Plano', question: 'Pergunta', permission: 'Permissão' },
+          status: 'Status', config: 'Configuração', plan: 'Plano', question: 'Pergunta', permission: 'Permissão',
+          qUnavailable: 'Pergunta indisponível — responda pelo chat.', qAnswered: 'Esta pergunta já foi respondida.',
+          qSend: 'Enviar resposta', qAnswerAll: 'Responda todas as perguntas.',
+          qAlreadyChat: 'Já respondida pelo chat.', qSendFail: 'Não foi possível enviar (HTTP ' },
     en: { connecting: 'Connecting…', offline: 'Backend unavailable — answer in chat.',
           close: 'Close', badApi: 'Invalid API address.', notTelegram: 'Open from Telegram.',
           home: 'Mini App connected.', preparing: 'Screen in preparation — use chat.',
           proto: 'App and server versions differ. Update.',
-          status: 'Status', config: 'Settings', plan: 'Plan', question: 'Question', permission: 'Permission' }
+          status: 'Status', config: 'Settings', plan: 'Plan', question: 'Question', permission: 'Permission',
+          qUnavailable: 'Question unavailable — answer in chat.', qAnswered: 'This question was already answered.',
+          qSend: 'Send answer', qAnswerAll: 'Answer every question.',
+          qAlreadyChat: 'Already answered in chat.', qSendFail: 'Could not send (HTTP ' }
   };
 
   function lang() {
@@ -133,6 +139,66 @@
       root.appendChild(body);
       window.__planCurrent = json;
     }).catch(function () { h.fallback(); });
+  };
+
+  // Fase 6b (Task 11): formulario da pergunta, respondido pela Mini App. `ctx.card` vem do
+  // fragmento (#screen=question&card=<id>), ja decodificado por `parseHash`.
+  SCREENS.question = function (ctx, root, h) {
+    var cardId = ctx.card || '';
+    h.api(ctx, 'GET', 'cards/' + encodeURIComponent(cardId)).then(function (json) {
+      if (json.state !== 'open') { root.appendChild(h.el('p', 'muted', L.qAnswered)); return; }
+      var perguntas = (json.payload && json.payload.questions) || [];
+      if (json.payload && json.payload.context) {
+        root.appendChild(h.el('pre', 'ctx', json.payload.context));
+      }
+      var form = document.createElement('form');
+      perguntas.forEach(function (q, qi) {
+        var fs = document.createElement('fieldset');
+        var titulo = (q.header ? q.header + ' — ' : '') + q.question;
+        fs.appendChild(h.el('legend', null, titulo));
+        (q.options || []).forEach(function (o, oi) {
+          var label = document.createElement('label');
+          var input = document.createElement('input');
+          input.type = q.multiSelect ? 'checkbox' : 'radio';
+          input.name = 'q' + qi; input.value = String(oi);
+          label.appendChild(input);
+          var texto = ' ' + o.label + (o.description ? ' — ' + o.description : '');
+          label.appendChild(document.createTextNode(texto));
+          fs.appendChild(label);
+        });
+        form.appendChild(fs);
+      });
+      root.appendChild(form);
+      var mb = tg && tg.MainButton;
+      if (!mb) return;
+      mb.setText(L.qSend);
+      mb.show();
+      mb.onClick(function () {
+        var answers = {};
+        var ok = true;
+        perguntas.forEach(function (q, qi) {
+          var marcados = Array.prototype.slice
+            .call(form.querySelectorAll('input[name="q' + qi + '"]:checked'))
+            .map(function (i) { return Number(i.value); });
+          if (!marcados.length) ok = false;
+          answers[String(qi)] = marcados;
+        });
+        if (!ok) { tg.showAlert(L.qAnswerAll); return; }
+        mb.showProgress();
+        h.api(ctx, 'POST', 'cards-answer/' + encodeURIComponent(cardId), { answers: answers })
+          .then(function () {
+            mb.hideProgress();
+            tg.HapticFeedback.notificationOccurred('success');
+            tg.close();
+          })
+          .catch(function (erro) {
+            mb.hideProgress();
+            var status = String((erro && erro.message) || '').replace('http_', '');
+            if (status === '409') tg.showAlert(L.qAlreadyChat);
+            else tg.showAlert(L.qSendFail + status + ').');
+          });
+      });
+    }).catch(function () { root.appendChild(h.el('p', 'err', L.qUnavailable)); });
   };
 
   function renderScreen(ctx) {
