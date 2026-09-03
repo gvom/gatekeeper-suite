@@ -17,7 +17,11 @@
           status: 'Status', config: 'Configuração', plan: 'Plano', question: 'Pergunta', permission: 'Permissão',
           qUnavailable: 'Pergunta indisponível — responda pelo chat.', qAnswered: 'Esta pergunta já foi respondida.',
           qSend: 'Enviar resposta', qAnswerAll: 'Responda todas as perguntas.',
-          qAlreadyChat: 'Já respondida pelo chat.', qSendFail: 'Não foi possível enviar (HTTP ' },
+          qAlreadyChat: 'Já respondida pelo chat.', qSendFail: 'Não foi possível enviar (HTTP ',
+          planChanged: 'O plano mudou desde que a pergunta foi feita. Decida pelo chat.',
+          planFeedback: 'O que deve mudar? (para Modificar)', planWriteWhat: 'Escreva o que deve mudar.',
+          planConfirm: 'Confirmar:', planAlreadyChat: 'Já decidido pelo chat.',
+          planExecute: '▶ Executar', planModify: '✏ Modificar', planAutoReview: '🔍 Auto revisar' },
     en: { connecting: 'Connecting…', offline: 'Backend unavailable — answer in chat.',
           close: 'Close', badApi: 'Invalid API address.', notTelegram: 'Open from Telegram.',
           home: 'Mini App connected.', preparing: 'Screen in preparation — use chat.',
@@ -25,7 +29,11 @@
           status: 'Status', config: 'Settings', plan: 'Plan', question: 'Question', permission: 'Permission',
           qUnavailable: 'Question unavailable — answer in chat.', qAnswered: 'This question was already answered.',
           qSend: 'Send answer', qAnswerAll: 'Answer every question.',
-          qAlreadyChat: 'Already answered in chat.', qSendFail: 'Could not send (HTTP ' }
+          qAlreadyChat: 'Already answered in chat.', qSendFail: 'Could not send (HTTP ',
+          planChanged: 'The plan changed since the question was asked. Decide in chat.',
+          planFeedback: 'What should change? (for Modify)', planWriteWhat: 'Write what should change.',
+          planConfirm: 'Confirm:', planAlreadyChat: 'Already decided in chat.',
+          planExecute: '▶ Execute', planModify: '✏ Modify', planAutoReview: '🔍 Auto review' }
   };
 
   function lang() {
@@ -138,6 +146,44 @@
       renderMarkdownInto(body, json.plan);
       root.appendChild(body);
       window.__planCurrent = json;
+      // Fase 6c (Task 13): botoes de decisao quando o link veio de um card `kind=plan` aberto.
+      if (ctx.card) {
+        h.api(ctx, 'GET', 'cards/' + encodeURIComponent(ctx.card)).then(function (c) {
+          if (c.state !== 'open' || c.kind !== 'plan') return;
+          if (c.payload && c.payload.hash && c.payload.hash !== json.hash) {
+            root.appendChild(h.el('p', 'warn', L.planChanged));
+            return;
+          }
+          var bar = document.createElement('div');
+          bar.className = 'actions';
+          var feedback = document.createElement('textarea');
+          feedback.placeholder = L.planFeedback;
+          feedback.maxLength = 4000;
+          var send = function (value) {
+            if (value === 'modify' && !feedback.value.trim()) { tg.showAlert(L.planWriteWhat); return; }
+            new Promise(function (res) { tg.showConfirm(L.planConfirm + ' ' + value + '?', res); })
+              .then(function (ok) {
+                if (!ok) return;
+                h.api(ctx, 'POST', 'cards-answer/' + encodeURIComponent(ctx.card),
+                      { value: value, feedback: feedback.value })
+                  .then(function () { tg.HapticFeedback.notificationOccurred('success'); tg.close(); })
+                  .catch(function (erro) {
+                    var status = String((erro && erro.message) || '').replace('http_', '');
+                    if (status === '409') tg.showAlert(L.planAlreadyChat);
+                    else tg.showAlert(L.qSendFail + status + ').');
+                  });
+              });
+          };
+          (c.options || []).forEach(function (opt) {
+            var b = document.createElement('button');
+            b.textContent = opt === 'execute' ? L.planExecute : opt === 'modify' ? L.planModify : L.planAutoReview;
+            b.onclick = function () { send(opt); };
+            bar.appendChild(b);
+          });
+          root.appendChild(feedback);
+          root.appendChild(bar);
+        }).catch(function () { /* sem card acessivel: tela fica so leitura, como na Task 4 */ });
+      }
     }).catch(function () { h.fallback(); });
   };
 
