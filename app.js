@@ -21,7 +21,11 @@
           planChanged: 'O plano mudou desde que a pergunta foi feita. Decida pelo chat.',
           planFeedback: 'O que deve mudar? (para Modificar)', planWriteWhat: 'Escreva o que deve mudar.',
           planConfirm: 'Confirmar:', planAlreadyChat: 'Já decidido pelo chat.',
-          planExecute: '▶ Executar', planModify: '✏ Modificar', planAutoReview: '🔍 Auto revisar' },
+          planExecute: '▶ Executar', planModify: '✏ Modificar', planAutoReview: '🔍 Auto revisar',
+          permUnavailable: 'Pedido indisponível — decida pelo chat.', permAnswered: 'Este pedido já foi decidido.',
+          permTitle: '🛡 Guardian pede confirmação', permTool: 'Ferramenta: ', permTier: ' · risco: ',
+          permReason: 'Motivo: ', permAllow: '✅ Allow', permDeny: '❌ Deny', permLocal: '🤔 Local',
+          permAlreadyChat: 'Já decidido pelo chat.' },
     en: { connecting: 'Connecting…', offline: 'Backend unavailable — answer in chat.',
           close: 'Close', badApi: 'Invalid API address.', notTelegram: 'Open from Telegram.',
           home: 'Mini App connected.', preparing: 'Screen in preparation — use chat.',
@@ -33,7 +37,11 @@
           planChanged: 'The plan changed since the question was asked. Decide in chat.',
           planFeedback: 'What should change? (for Modify)', planWriteWhat: 'Write what should change.',
           planConfirm: 'Confirm:', planAlreadyChat: 'Already decided in chat.',
-          planExecute: '▶ Execute', planModify: '✏ Modify', planAutoReview: '🔍 Auto review' }
+          planExecute: '▶ Execute', planModify: '✏ Modify', planAutoReview: '🔍 Auto review',
+          permUnavailable: 'Request unavailable — decide in chat.', permAnswered: 'This request was already decided.',
+          permTitle: '🛡 Guardian asks for confirmation', permTool: 'Tool: ', permTier: ' · risk: ',
+          permReason: 'Reason: ', permAllow: '✅ Allow', permDeny: '❌ Deny', permLocal: '🤔 Local',
+          permAlreadyChat: 'Already decided in chat.' }
   };
 
   function lang() {
@@ -245,6 +253,45 @@
           });
       });
     }).catch(function () { root.appendChild(h.el('p', 'err', L.qUnavailable)); });
+  };
+
+  // Fase 6d (Task 15): decisao de permissao (allow/deny/local) via card `kind=permission`.
+  // `payload.text`/`.tool`/`.tier`/`.reason` sao dados do dono (o comando que ele mesmo digitou,
+  // redigido pelo servidor); vao para o DOM so via `h.el`/`textContent` (linha 56), nunca por
+  // montagem de HTML em string — mesma regra ja usada em `renderMarkdownInto` e nas telas plan/question.
+  SCREENS.permission = function (ctx, root, h) {
+    var cardId = ctx.card || '';
+    h.api(ctx, 'GET', 'cards/' + encodeURIComponent(cardId)).then(function (json) {
+      if (json.kind !== 'permission') { root.appendChild(h.el('p', 'err', L.permUnavailable)); return; }
+      if (json.state !== 'open') { root.appendChild(h.el('p', 'muted', L.permAnswered)); return; }
+      var payload = json.payload || {};
+      root.appendChild(h.el('h1', null, L.permTitle));
+      root.appendChild(h.el('p', 'meta', L.permTool + payload.tool + L.permTier + payload.tier));
+      root.appendChild(h.el('p', null, L.permReason + (payload.reason || '')));
+      root.appendChild(h.el('pre', null, payload.text || ''));
+      var bar = document.createElement('div');
+      bar.className = 'actions';
+      var labels = { a: L.permAllow, d: L.permDeny, l: L.permLocal };
+      (json.options || []).forEach(function (code) {
+        var b = document.createElement('button');
+        b.textContent = labels[code] || code;
+        b.onclick = function () {
+          new Promise(function (res) { tg.showConfirm(L.planConfirm + ' ' + (labels[code] || code) + '?', res); })
+            .then(function (ok) {
+              if (!ok) return;
+              h.api(ctx, 'POST', 'cards-answer/' + encodeURIComponent(cardId), { decision: code })
+                .then(function () { tg.HapticFeedback.notificationOccurred('success'); tg.close(); })
+                .catch(function (erro) {
+                  var status = String((erro && erro.message) || '').replace('http_', '');
+                  if (status === '409') tg.showAlert(L.permAlreadyChat);
+                  else tg.showAlert(L.qSendFail + status + ').');
+                });
+            });
+        };
+        bar.appendChild(b);
+      });
+      root.appendChild(bar);
+    }).catch(function () { h.fallback(); });
   };
 
   function renderScreen(ctx) {
