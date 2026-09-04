@@ -12,9 +12,10 @@
   var T = {
     pt: { connecting: 'Conectando…', offline: 'Backend indisponível — responda pelo chat.',
           close: 'Fechar', badApi: 'Endereço da API inválido.', notTelegram: 'Abra pelo Telegram.',
-          home: 'Mini App conectada.', preparing: 'Tela em preparação — use o chat.',
+          home: 'Início', preparing: 'Tela em preparação — use o chat.',
           proto: 'Versão do app e do servidor não batem. Atualize.',
           status: 'Status', config: 'Configuração', plan: 'Plano', question: 'Pergunta', permission: 'Permissão',
+          homePending: 'Você tem uma decisão pendente:', homeResume: 'Continuar', back: '← Voltar',
           qUnavailable: 'Pergunta indisponível — responda pelo chat.', qAnswered: 'Esta pergunta já foi respondida.',
           qSend: 'Enviar resposta', qAnswerAll: 'Responda todas as perguntas.',
           qAlreadyChat: 'Já respondida pelo chat.', qSendFail: 'Não foi possível enviar (HTTP ',
@@ -28,9 +29,10 @@
           permAlreadyChat: 'Já decidido pelo chat.' },
     en: { connecting: 'Connecting…', offline: 'Backend unavailable — answer in chat.',
           close: 'Close', badApi: 'Invalid API address.', notTelegram: 'Open from Telegram.',
-          home: 'Mini App connected.', preparing: 'Screen in preparation — use chat.',
+          home: 'Home', preparing: 'Screen in preparation — use chat.',
           proto: 'App and server versions differ. Update.',
           status: 'Status', config: 'Settings', plan: 'Plan', question: 'Question', permission: 'Permission',
+          homePending: 'You have a pending decision:', homeResume: 'Continue', back: '← Back',
           qUnavailable: 'Question unavailable — answer in chat.', qAnswered: 'This question was already answered.',
           qSend: 'Send answer', qAnswerAll: 'Answer every question.',
           qAlreadyChat: 'Already answered in chat.', qSendFail: 'Could not send (HTTP ',
@@ -143,9 +145,19 @@
   var SCREENS = {};
   window.GK_SCREENS = SCREENS;
 
+  // Fase 1 do redesign (plano pos-Arco-C): link de volta para a Home nas telas contextuais
+  // (plan/question/permission). Nao substitui `tg.close()` — esse continua so em decisao enviada.
+  function backLink(ctx) {
+    var a = el('button', 'back-link', L.back);
+    a.type = 'button';
+    a.onclick = function () { renderScreen({ api: ctx.api, who: ctx.who, screen: 'home', card: '' }); };
+    return a;
+  }
+
   // Fase 5 (Task 4): leitura integral do plano. `window.__planCurrent` guarda o ultimo payload
   // para a Fase 6c (Task 13) acrescentar os botoes de decisao sem refazer o fetch.
   SCREENS.plan = function (ctx, root, h) {
+    root.appendChild(backLink(ctx));
     h.api(ctx, 'GET', 'plan/current').then(function (json) {
       var meta = h.el('p', 'meta', 'Rodada ' + json.round + ' · hash ' +
         String(json.hash).slice(0, 12) + ' · ' + json.plan.length + ' caracteres');
@@ -198,6 +210,7 @@
   // Fase 6b (Task 11): formulario da pergunta, respondido pela Mini App. `ctx.card` vem do
   // fragmento (#screen=question&card=<id>), ja decodificado por `parseHash`.
   SCREENS.question = function (ctx, root, h) {
+    root.appendChild(backLink(ctx));
     var cardId = ctx.card || '';
     h.api(ctx, 'GET', 'cards/' + encodeURIComponent(cardId)).then(function (json) {
       if (json.state !== 'open') { root.appendChild(h.el('p', 'muted', L.qAnswered)); return; }
@@ -260,6 +273,7 @@
   // redigido pelo servidor); vao para o DOM so via `h.el`/`textContent` (linha 56), nunca por
   // montagem de HTML em string — mesma regra ja usada em `renderMarkdownInto` e nas telas plan/question.
   SCREENS.permission = function (ctx, root, h) {
+    root.appendChild(backLink(ctx));
     var cardId = ctx.card || '';
     h.api(ctx, 'GET', 'cards/' + encodeURIComponent(cardId)).then(function (json) {
       if (json.kind !== 'permission') { root.appendChild(h.el('p', 'err', L.permUnavailable)); return; }
@@ -294,6 +308,30 @@
     }).catch(function () { h.fallback(); });
   };
 
+  // Fase 1 do redesign (plano pos-Arco-C): tela inicial quando a Mini App abre sem `#screen`
+  // (Menu Button do Telegram). Mostra um resumo do status e, se houver, um atalho para retomar
+  // uma decisao em aberto no Decision Inbox (GET pending — leitura, nunca decide nada).
+  SCREENS.home = function (ctx, root, h) {
+    h.api(ctx, 'GET', 'status').then(function (resp) {
+      var s = (resp && resp.status) || {};
+      root.appendChild(h.el('p', 'muted', s.state || '?'));
+    }).catch(function () { /* resumo e so um extra; a Home continua util sem ele */ });
+    h.api(ctx, 'GET', 'pending').then(function (resp) {
+      var card = resp && resp.card;
+      if (!card) return;
+      var box = document.createElement('div');
+      box.className = 'card';
+      box.appendChild(h.el('p', null, L.homePending));
+      var btn = document.createElement('button');
+      btn.textContent = L.homeResume + ' — ' + (L[card.kind] || card.kind);
+      btn.onclick = function () {
+        renderScreen({ api: ctx.api, who: ctx.who, screen: card.kind, card: card.id });
+      };
+      box.appendChild(btn);
+      root.appendChild(box);
+    }).catch(function () { /* sem pendencia detectavel: Home segue normal */ });
+  };
+
   // Fase 1 do redesign (plano pos-Arco-C): shell de navegacao. `home`/`status`/`config` sao as
   // telas "de navegacao" (mostram a barra de abas); `plan`/`question`/`permission` sao
   // contextuais (abertas so por um card especifico) e escondem a barra.
@@ -326,7 +364,7 @@
     renderTabs(ctx.screen);
     var fn = SCREENS[ctx.screen];
     if (typeof fn === 'function') { fn(ctx, s, { el: el, clear: clear, api: api, L: L, fallback: showFallback }); return; }
-    s.appendChild(el('p', 'muted', ctx.screen ? L.preparing : L.home));
+    s.appendChild(el('p', 'muted', L.preparing));
     document.getElementById('foot').hidden = false;
     var btn = document.getElementById('btn-close'); btn.textContent = L.close;
     btn.onclick = function () { if (tg) tg.close(); };
@@ -347,6 +385,9 @@
         showFallback(L.badApi); return;
       }
       ctx.who = who;
+      // Fase 1 do redesign: Menu Button abre sem #screen — a Home passa a ser o destino default
+      // em vez do antigo texto morto "Mini App conectada.".
+      if (!ctx.screen) ctx.screen = 'home';
       setBadge(L[ctx.screen] || '');
       renderScreen(ctx);
     }).catch(function () { showFallback(L.offline); });
