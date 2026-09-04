@@ -294,8 +294,36 @@
     }).catch(function () { h.fallback(); });
   };
 
+  // Fase 1 do redesign (plano pos-Arco-C): shell de navegacao. `home`/`status`/`config` sao as
+  // telas "de navegacao" (mostram a barra de abas); `plan`/`question`/`permission` sao
+  // contextuais (abertas so por um card especifico) e escondem a barra.
+  var NAV_SCREENS = ['home', 'status', 'config'];
+  var TABS = ['status', 'config'];
+  var currentCtx = null;
+
+  function renderTabs(activeScreen) {
+    var nav = document.getElementById('tabs');
+    if (!nav) return;
+    if (NAV_SCREENS.indexOf(activeScreen) === -1) { nav.hidden = true; return; }
+    clear(nav);
+    nav.hidden = false;
+    TABS.forEach(function (name) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'tab' + (name === activeScreen ? ' tab-active' : '');
+      btn.textContent = L[name] || name;
+      btn.onclick = function () {
+        if (name === activeScreen || !currentCtx) return;
+        renderScreen({ api: currentCtx.api, who: currentCtx.who, screen: name, card: '' });
+      };
+      nav.appendChild(btn);
+    });
+  }
+
   function renderScreen(ctx) {
+    currentCtx = ctx;
     var s = screenNode(); clear(s);
+    renderTabs(ctx.screen);
     var fn = SCREENS[ctx.screen];
     if (typeof fn === 'function') { fn(ctx, s, { el: el, clear: clear, api: api, L: L, fallback: showFallback }); return; }
     s.appendChild(el('p', 'muted', ctx.screen ? L.preparing : L.home));
