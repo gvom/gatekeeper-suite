@@ -202,8 +202,10 @@
                   });
               });
           };
+          var planClasses = { execute: 'btn-success', modify: 'btn-neutral', auto_review: 'btn-neutral' };
           (c.options || []).forEach(function (opt) {
             var b = document.createElement('button');
+            b.className = planClasses[opt] || 'btn-neutral';
             b.textContent = opt === 'execute' ? L.planExecute : opt === 'modify' ? L.planModify : L.planAutoReview;
             b.onclick = function () { send(opt); };
             bar.appendChild(b);
@@ -294,8 +296,10 @@
       var bar = document.createElement('div');
       bar.className = 'actions';
       var labels = { a: L.permAllow, d: L.permDeny, l: L.permLocal };
+      var permClasses = { a: 'btn-success', d: 'btn-danger', l: 'btn-neutral' };
       (json.options || []).forEach(function (code) {
         var b = document.createElement('button');
+        b.className = permClasses[code] || 'btn-neutral';
         b.textContent = labels[code] || code;
         b.onclick = function () {
           new Promise(function (res) { tg.showConfirm(L.planConfirm + ' ' + (labels[code] || code) + '?', res); })

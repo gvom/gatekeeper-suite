@@ -54,6 +54,11 @@ button { width: 100%; padding: 12px; border: 0; border-radius: 10px;
 .state-actions { margin-top: 16px; }
 .state-actions button { background: transparent; border: 1px solid rgba(127,127,127,.35);
   color: var(--fg); margin-top: 8px; }
+/* Fase 3 do redesign: variantes semanticas de botao — mesma linguagem que o chat ja usa via
+   `style` da Bot API (success/danger/primary). Reservadas ao que e TERMINAL (decisao final). */
+.btn-success { background: var(--success); color: var(--success-fg); }
+.btn-danger { background: var(--danger); color: var(--danger-fg); }
+.btn-neutral { background: var(--card); color: var(--fg); }
 pre { white-space: pre-wrap; word-break: break-word; background: var(--card);
   border-radius: 12px; padding: 12px; font-size: 13px; }
 h2 { font-size: 17px; margin: 16px 0 6px; }
