@@ -26,7 +26,10 @@
           permUnavailable: 'Pedido indisponível — decida pelo chat.', permAnswered: 'Este pedido já foi decidido.',
           permTitle: '🛡 Guardian pede confirmação', permTool: 'Ferramenta: ', permTier: ' · risco: ',
           permReason: 'Motivo: ', permAllow: '✅ Allow', permDeny: '❌ Deny', permLocal: '🤔 Local',
-          permAlreadyChat: 'Já decidido pelo chat.' },
+          permAlreadyChat: 'Já decidido pelo chat.',
+          permAutoOn: 'Ativar automático', permAutoOff: 'Desligar automático',
+          permFloorUp: '⬆ Subir piso', permFloorDown: '⬇ Descer piso', permFloorNow: 'Piso atual: ',
+          permStateFail: 'Não foi possível aplicar agora — tente de novo.' },
     en: { connecting: 'Connecting…', offline: 'Backend unavailable — answer in chat.',
           close: 'Close', badApi: 'Invalid API address.', notTelegram: 'Open from Telegram.',
           home: 'Home', preparing: 'Screen in preparation — use chat.',
@@ -43,7 +46,10 @@
           permUnavailable: 'Request unavailable — decide in chat.', permAnswered: 'This request was already decided.',
           permTitle: '🛡 Guardian asks for confirmation', permTool: 'Tool: ', permTier: ' · risk: ',
           permReason: 'Reason: ', permAllow: '✅ Allow', permDeny: '❌ Deny', permLocal: '🤔 Local',
-          permAlreadyChat: 'Already decided in chat.' }
+          permAlreadyChat: 'Already decided in chat.',
+          permAutoOn: 'Turn autonomous on', permAutoOff: 'Turn autonomous off',
+          permFloorUp: '⬆ Raise floor', permFloorDown: '⬇ Lower floor', permFloorNow: 'Current floor: ',
+          permStateFail: 'Could not apply now — try again.' }
   };
 
   function lang() {
@@ -305,6 +311,44 @@
         bar.appendChild(b);
       });
       root.appendChild(bar);
+
+      // Fase 2 do redesign de UX: paridade do modo autonomo (A/U/B/C do chat). Nao decide nada
+      // (POST cards-action/<id>, canal separado do CAS acima) — so ativa/desliga o modo ou move
+      // o piso, e a tela reconsulta o card pra mostrar o estado resultante.
+      var estado = { auto: !!payload.auto, floor: String(payload.floor || 'strict') };
+      var stateBar = document.createElement('div');
+      stateBar.className = 'actions state-actions';
+      var floorLabel = h.el('p', 'meta', '');
+      var autoBtn = document.createElement('button');
+      var upBtn = document.createElement('button');
+      upBtn.textContent = L.permFloorUp;
+      var downBtn = document.createElement('button');
+      downBtn.textContent = L.permFloorDown;
+
+      function refreshEstado(auto, floor) {
+        estado.auto = !!auto;
+        if (floor) estado.floor = String(floor);
+        autoBtn.textContent = estado.auto ? L.permAutoOff : L.permAutoOn;
+        floorLabel.textContent = L.permFloorNow + estado.floor;
+      }
+      function sendState(code) {
+        h.api(ctx, 'POST', 'cards-action/' + encodeURIComponent(cardId), { action: code })
+          .then(function () { return h.api(ctx, 'GET', 'cards/' + encodeURIComponent(cardId)); })
+          .then(function (json2) {
+            var p2 = json2.payload || {};
+            refreshEstado(p2.auto, p2.floor);
+          })
+          .catch(function () { tg.showAlert(L.permStateFail); });
+      }
+      autoBtn.onclick = function () { sendState(estado.auto ? 'C' : 'A'); };
+      upBtn.onclick = function () { sendState('U'); };
+      downBtn.onclick = function () { sendState('B'); };
+      refreshEstado(payload.auto, payload.floor);
+      root.appendChild(floorLabel);
+      stateBar.appendChild(autoBtn);
+      stateBar.appendChild(upBtn);
+      stateBar.appendChild(downBtn);
+      root.appendChild(stateBar);
     }).catch(function () { h.fallback(); });
   };
 
