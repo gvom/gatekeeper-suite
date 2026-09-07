@@ -30,7 +30,7 @@
           permAutoOn: 'Ativar automático', permAutoOff: 'Desligar automático',
           permFloorUp: 'Subir piso', permFloorDown: 'Descer piso', permFloorNow: 'Piso atual: ',
           permApplying: 'Aplicando…',
-          permStateFail: 'Não foi possível aplicar agora — tente de novo.' },
+          permStateFail: 'Não foi possível aplicar agora — tente de novo.', retry: 'Tentar de novo' },
     en: { connecting: 'Connecting…', offline: 'Backend unavailable — answer in chat.',
           close: 'Close', badApi: 'Invalid API address.', notTelegram: 'Open from Telegram.',
           home: 'Home', preparing: 'Screen in preparation — use chat.',
@@ -51,7 +51,7 @@
           permAutoOn: 'Turn autonomous on', permAutoOff: 'Turn autonomous off',
           permFloorUp: 'Raise floor', permFloorDown: 'Lower floor', permFloorNow: 'Current floor: ',
           permApplying: 'Applying…',
-          permStateFail: 'Could not apply now — try again.' }
+          permStateFail: 'Could not apply now — try again.', retry: 'Try again' }
   };
 
   function lang() {
@@ -169,9 +169,16 @@
     });
   }
 
-  function showFallback(msg) {
+  // Fase 3 do redesign: `retry` opcional — quando a falha é plausivelmente temporária (rede,
+  // backend fora do ar), oferece tentar de novo sem precisar fechar/reabrir a Mini App.
+  function showFallback(msg, retry) {
     var s = screenNode(); clear(s);
     s.appendChild(el('p', 'err', msg || L.offline));
+    if (typeof retry === 'function') {
+      var tentar = iconLabel('button', 'undo', L.retry);
+      tentar.onclick = retry;
+      s.appendChild(tentar);
+    }
     var foot = document.getElementById('foot'); foot.hidden = false;
     var btn = document.getElementById('btn-close'); btn.textContent = L.close;
     btn.onclick = function () { if (tg) tg.close(); };
@@ -284,7 +291,7 @@
           root.appendChild(bar);
         }).catch(function () { /* sem card acessivel: tela fica so leitura, como na Task 4 */ });
       }
-    }).catch(function () { limpar(); h.fallback(); });
+    }).catch(function () { limpar(); h.fallback(undefined, function () { renderScreen(ctx); }); });
   };
 
   // Fase 6b (Task 11): formulario da pergunta, respondido pela Mini App. `ctx.card` vem do
@@ -449,7 +456,7 @@
       stateBar.appendChild(upBtn);
       stateBar.appendChild(downBtn);
       root.appendChild(stateBar);
-    }).catch(function () { limpar(); h.fallback(); });
+    }).catch(function () { limpar(); h.fallback(undefined, function () { renderScreen(ctx); }); });
   };
 
   // Fase 1 do redesign (plano pos-Arco-C): tela inicial quando a Mini App abre sem `#screen`
@@ -545,7 +552,7 @@
       if (!ctx.screen) ctx.screen = 'home';
       setBadge(L[ctx.screen] || '');
       renderScreen(ctx);
-    }).catch(function () { showFallback(L.offline); });
+    }).catch(function () { showFallback(L.offline, boot); });
   }
 
   document.addEventListener('DOMContentLoaded', boot);

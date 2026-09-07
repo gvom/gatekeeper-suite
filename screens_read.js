@@ -55,7 +55,7 @@
         });
       }
       if (s.failures && s.failures.length) { root.appendChild(h.el('h2', null, t.failures)); root.appendChild(h.el('p', 'err', s.failures.join('; '))); }
-    }).catch(function () { limpar(); h.fallback(); });
+    }).catch(function () { limpar(); h.fallback(undefined, function () { S.status(ctx, root, h); }); });
   };
 
   // Fase 6a: `S.config` ganha escrita. `h.api` rejeita sem corpo em erro (util pro GET), mas
@@ -160,7 +160,7 @@
         });
       };
       root.appendChild(undo);
-    }).catch(function () { limpar(); h.fallback(); });
+    }).catch(function () { limpar(); h.fallback(undefined, function () { S.config(ctx, root, h); }); });
   };
 
   function lista(ctx, itens, t, h, onDone) {
