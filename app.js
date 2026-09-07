@@ -337,24 +337,24 @@
         autoBtn.disabled = v; upBtn.disabled = v; downBtn.disabled = v;
         if (v) floorLabel.textContent = L.permApplying;
       }
-      // O laco que aplica a acao (gatekeeper.py) so reavalia o card a cada volta do seu proprio
-      // polling do Telegram — uma unica releitura logo apos o POST via de regra pega o card
-      // ainda com a acao pendente. Reconsulta curta ate `pending_state_action` sumir (aplicada)
-      // ou esgotar as tentativas, em vez de mostrar estado desatualizado como se nada tivesse
-      // acontecido.
-      function pollAteAplicar(tentativas) {
-        return h.api(ctx, 'GET', 'cards/' + encodeURIComponent(cardId)).then(function (json2) {
-          if (json2.pending_state_action && tentativas > 0) {
-            return new Promise(function (res) { setTimeout(res, 700); })
-              .then(function () { return pollAteAplicar(tentativas - 1); });
-          }
-          return json2;
-        });
+      // O laco que aplica a acao (gatekeeper.py) leva uns 5-10s de verdade (varias voltas do
+      // proprio polling do Telegram). Poucas tentativas bem espacadas: espera o suficiente pra
+      // maioria dos casos, sem multiplicar requisicoes contra o limite de taxa
+      // (`ANON_LIMIT_PER_MIN`, `api_server.py`) como uma reconsulta em intervalo curto faria.
+      function pollAteAplicar(tentativas, atraso) {
+        return new Promise(function (res) { setTimeout(res, atraso); })
+          .then(function () { return h.api(ctx, 'GET', 'cards/' + encodeURIComponent(cardId)); })
+          .then(function (json2) {
+            if (json2.pending_state_action && tentativas > 0) {
+              return pollAteAplicar(tentativas - 1, 3000);
+            }
+            return json2;
+          });
       }
       function sendState(code) {
         setBusy(true);
         h.api(ctx, 'POST', 'cards-action/' + encodeURIComponent(cardId), { action: code })
-          .then(function () { return pollAteAplicar(8); })
+          .then(function () { return pollAteAplicar(2, 6000); })
           .then(function (json2) {
             var p2 = json2.payload || {};
             refreshEstado(p2.auto, p2.floor);
