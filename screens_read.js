@@ -8,13 +8,13 @@
     pt: { state: 'Estado', session: 'Sessão', inflight: 'Ferramentas em voo', subagents: 'Subagentes',
           indicative: 'indicativo', goal: 'Objetivo', phase: 'Fase', open: 'Fases abertas',
           waiting: 'Aguardando', activity: 'Última atividade', notes: 'Observações', failures: 'Falhas',
-          essentials: 'Essenciais', readonly: '🔒 = trava pelo ambiente do processo, não editável aqui.',
+          essentials: 'Essenciais', readonly: '= trava pelo ambiente do processo, não editável aqui.',
           shadowed: 'valor vindo do ambiente do processo; gravar não teria efeito', none: 'nenhum',
           undo: 'Desfazer última', restartQ: 'Reiniciar o daemon agora?' },
     en: { state: 'State', session: 'Session', inflight: 'Tools in flight', subagents: 'Subagents',
           indicative: 'indicative', goal: 'Goal', phase: 'Phase', open: 'Open phases',
           waiting: 'Waiting', activity: 'Last activity', notes: 'Notes', failures: 'Failures',
-          essentials: 'Essentials', readonly: '🔒 = locked by the process environment, not editable here.',
+          essentials: 'Essentials', readonly: '= locked by the process environment, not editable here.',
           shadowed: 'value comes from the process environment; writing would have no effect', none: 'none',
           undo: 'Undo last', restartQ: 'Restart the daemon now?' }
   };
@@ -44,7 +44,14 @@
       if (s.governorPaused && s.governorReason) card.appendChild(row(h, '⏳', s.governorReason));
       root.appendChild(card);
       if (s.lastActivity) { root.appendChild(h.el('h2', null, t.activity)); root.appendChild(h.el('pre', null, s.lastActivity)); }
-      if (s.notes && s.notes.length) { root.appendChild(h.el('h2', null, t.notes)); s.notes.forEach(function (n) { root.appendChild(h.el('p', 'muted', '⚠️ ' + n)); }); }
+      if (s.notes && s.notes.length) {
+        root.appendChild(h.el('h2', null, t.notes));
+        s.notes.forEach(function (n) {
+          var p = h.iconLabel('p', 'alert-triangle', n);
+          p.className = 'muted';
+          root.appendChild(p);
+        });
+      }
       if (s.failures && s.failures.length) { root.appendChild(h.el('h2', null, t.failures)); root.appendChild(h.el('p', 'err', s.failures.join('; '))); }
     }).catch(function () { h.fallback(); });
   };
@@ -86,7 +93,8 @@
     var tg = window.Telegram && window.Telegram.WebApp;
     if (item.kind === 'bool') {
       var btn = document.createElement('button');
-      btn.textContent = item.value === 'true' ? '🟢 on' : '🔴 off';
+      btn.className = item.value === 'true' ? 'btn-success' : 'btn-danger';
+      btn.textContent = item.value === 'true' ? 'on' : 'off';
       btn.onclick = function () {
         btn.disabled = true;
         setConfig(ctx, item.key, item.value === 'true' ? 'false' : 'true', false)
@@ -123,12 +131,14 @@
     h.api(ctx, 'GET', 'config').then(function (resp) {
       h.clear(root);
       var t = T[resp.lang === 'pt' ? 'pt' : 'en'];
-      root.appendChild(h.el('p', 'muted', t.readonly));
+      var pReadonly = h.iconLabel('p', 'lock', t.readonly);
+      pReadonly.className = 'muted';
+      root.appendChild(pReadonly);
       var porChave = {};
       (resp.settings || []).forEach(function (s) { porChave[s.key] = s; });
       // Essenciais primeiro (mesma curadoria do chat).
       var ess = (resp.essentials || []).map(function (k) { return porChave[k]; }).filter(Boolean);
-      if (ess.length) { root.appendChild(h.el('h2', null, '⭐ ' + t.essentials)); root.appendChild(lista(ctx, ess, t, h, onDone)); }
+      if (ess.length) { root.appendChild(h.iconLabel('h2', 'star', t.essentials)); root.appendChild(lista(ctx, ess, t, h, onDone)); }
       // Depois por categoria › grupo, na ordem do registry.
       (resp.categories || []).forEach(function (cat) {
         var itens = (resp.settings || []).filter(function (s) { return s.category === cat; });
@@ -139,8 +149,7 @@
         itens.forEach(function (s) { var g = s.groupLabel || ''; if (!(g in grupos)) { grupos[g] = []; ordem.push(g); } grupos[g].push(s); });
         ordem.forEach(function (g) { if (g) root.appendChild(h.el('p', 'muted', g)); root.appendChild(lista(ctx, grupos[g], t, h, onDone)); });
       });
-      var undo = document.createElement('button');
-      undo.textContent = '↶ ' + t.undo;
+      var undo = h.iconLabel('button', 'undo', t.undo);
       undo.onclick = function () {
         apiRaw(ctx, 'POST', 'config/undo', { index: 0 }).then(function (r) {
           handleWriteResult(ctx, r.status, r.json, onDone);
@@ -156,8 +165,9 @@
       var r = h.el('div', 'row');
       var k = h.el('span', 'k', s.key.replace(/^(GATEKEEPER|GOVERNOR)_/, ''));
       k.title = s.help || s.description || '';
-      var v = h.el('span', 'v', String(s.value) + (s.editable ? '' : ' 🔒') + (s.shadowed ? ' ⚠' : ''));
-      if (s.shadowed) v.title = t.shadowed;
+      var v = h.el('span', 'v', String(s.value));
+      if (!s.editable) v.appendChild(h.icon('lock'));
+      if (s.shadowed) { v.appendChild(h.icon('alert-triangle')); v.title = t.shadowed; }
       r.appendChild(k); r.appendChild(v);
       attachEditor(ctx, r, s, onDone);
       card.appendChild(r);

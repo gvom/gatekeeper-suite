@@ -59,6 +59,9 @@ button { width: 100%; padding: 12px; border: 0; border-radius: 10px;
 .btn-success { background: var(--success); color: var(--success-fg); }
 .btn-danger { background: var(--danger); color: var(--danger-fg); }
 .btn-neutral { background: var(--card); color: var(--fg); }
+.icon { vertical-align: -3px; flex-shrink: 0; margin-left: 4px; }
+.icon:first-child { margin-left: 0; }
+h1 .icon, h2 .icon { vertical-align: -2px; }
 pre { white-space: pre-wrap; word-break: break-word; background: var(--card);
   border-radius: 12px; padding: 12px; font-size: 13px; }
 h2 { font-size: 17px; margin: 16px 0 6px; }

@@ -15,20 +15,20 @@
           home: 'Início', preparing: 'Tela em preparação — use o chat.',
           proto: 'Versão do app e do servidor não batem. Atualize.',
           status: 'Status', config: 'Configuração', plan: 'Plano', question: 'Pergunta', permission: 'Permissão',
-          homePending: 'Você tem uma decisão pendente:', homeResume: 'Continuar', back: '← Voltar',
+          homePending: 'Você tem uma decisão pendente:', homeResume: 'Continuar', back: 'Voltar',
           qUnavailable: 'Pergunta indisponível — responda pelo chat.', qAnswered: 'Esta pergunta já foi respondida.',
           qSend: 'Enviar resposta', qAnswerAll: 'Responda todas as perguntas.',
           qAlreadyChat: 'Já respondida pelo chat.', qSendFail: 'Não foi possível enviar (HTTP ',
           planChanged: 'O plano mudou desde que a pergunta foi feita. Decida pelo chat.',
           planFeedback: 'O que deve mudar? (para Modificar)', planWriteWhat: 'Escreva o que deve mudar.',
           planConfirm: 'Confirmar:', planAlreadyChat: 'Já decidido pelo chat.',
-          planExecute: '▶ Executar', planModify: '✏ Modificar', planAutoReview: '🔍 Auto revisar',
+          planExecute: 'Executar', planModify: 'Modificar', planAutoReview: 'Auto revisar',
           permUnavailable: 'Pedido indisponível — decida pelo chat.', permAnswered: 'Este pedido já foi decidido.',
-          permTitle: '🛡 Guardian pede confirmação', permTool: 'Ferramenta: ', permTier: ' · risco: ',
-          permReason: 'Motivo: ', permAllow: '✅ Allow', permDeny: '❌ Deny', permLocal: '🤔 Local',
+          permTitle: 'Guardian pede confirmação', permTool: 'Ferramenta: ', permTier: ' · risco: ',
+          permReason: 'Motivo: ', permAllow: 'Allow', permDeny: 'Deny', permLocal: 'Local',
           permAlreadyChat: 'Já decidido pelo chat.',
           permAutoOn: 'Ativar automático', permAutoOff: 'Desligar automático',
-          permFloorUp: '⬆ Subir piso', permFloorDown: '⬇ Descer piso', permFloorNow: 'Piso atual: ',
+          permFloorUp: 'Subir piso', permFloorDown: 'Descer piso', permFloorNow: 'Piso atual: ',
           permApplying: 'Aplicando…',
           permStateFail: 'Não foi possível aplicar agora — tente de novo.' },
     en: { connecting: 'Connecting…', offline: 'Backend unavailable — answer in chat.',
@@ -36,20 +36,20 @@
           home: 'Home', preparing: 'Screen in preparation — use chat.',
           proto: 'App and server versions differ. Update.',
           status: 'Status', config: 'Settings', plan: 'Plan', question: 'Question', permission: 'Permission',
-          homePending: 'You have a pending decision:', homeResume: 'Continue', back: '← Back',
+          homePending: 'You have a pending decision:', homeResume: 'Continue', back: 'Back',
           qUnavailable: 'Question unavailable — answer in chat.', qAnswered: 'This question was already answered.',
           qSend: 'Send answer', qAnswerAll: 'Answer every question.',
           qAlreadyChat: 'Already answered in chat.', qSendFail: 'Could not send (HTTP ',
           planChanged: 'The plan changed since the question was asked. Decide in chat.',
           planFeedback: 'What should change? (for Modify)', planWriteWhat: 'Write what should change.',
           planConfirm: 'Confirm:', planAlreadyChat: 'Already decided in chat.',
-          planExecute: '▶ Execute', planModify: '✏ Modify', planAutoReview: '🔍 Auto review',
+          planExecute: 'Execute', planModify: 'Modify', planAutoReview: 'Auto review',
           permUnavailable: 'Request unavailable — decide in chat.', permAnswered: 'This request was already decided.',
-          permTitle: '🛡 Guardian asks for confirmation', permTool: 'Tool: ', permTier: ' · risk: ',
-          permReason: 'Reason: ', permAllow: '✅ Allow', permDeny: '❌ Deny', permLocal: '🤔 Local',
+          permTitle: 'Guardian asks for confirmation', permTool: 'Tool: ', permTier: ' · risk: ',
+          permReason: 'Reason: ', permAllow: 'Allow', permDeny: 'Deny', permLocal: 'Local',
           permAlreadyChat: 'Already decided in chat.',
           permAutoOn: 'Turn autonomous on', permAutoOff: 'Turn autonomous off',
-          permFloorUp: '⬆ Raise floor', permFloorDown: '⬇ Lower floor', permFloorNow: 'Current floor: ',
+          permFloorUp: 'Raise floor', permFloorDown: 'Lower floor', permFloorNow: 'Current floor: ',
           permApplying: 'Applying…',
           permStateFail: 'Could not apply now — try again.' }
   };
@@ -68,6 +68,58 @@
   }
   function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
   function screenNode() { return document.getElementById('screen'); }
+
+  // Fase 3 do redesign: icones como SVG inline via DOM (`createElementNS`), nunca montagem de
+  // HTML em string — a CSP nao tem `unsafe-inline` e o teste estatico guarda isso. Formas
+  // geometricas simples (linha/circulo/poligono), sem path bezier a mao, pra reduzir risco de
+  // markup malformado. `currentColor` deixa o icone herdar a cor semantica do botao/texto.
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs) {
+    var n = document.createElementNS(SVG_NS, tag);
+    for (var k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  var ICON_SHAPES = {
+    back: [{ t: 'polyline', a: { points: '15,18 9,12 15,6' } }],
+    play: [{ t: 'polygon', a: { points: '6,4 20,12 6,20', fill: 'currentColor', stroke: 'none' } }],
+    edit: [{ t: 'line', a: { x1: 4, y1: 20, x2: 16, y2: 8 } },
+           { t: 'line', a: { x1: 16, y1: 8, x2: 20, y2: 4 } },
+           { t: 'line', a: { x1: 13, y1: 11, x2: 17, y2: 15 } }],
+    search: [{ t: 'circle', a: { cx: 10, cy: 10, r: 6 } },
+             { t: 'line', a: { x1: 21, y1: 21, x2: 15, y2: 15 } }],
+    shield: [{ t: 'polygon', a: { points: '12,2 20,6 20,12 12,22 4,12 4,6' } }],
+    check: [{ t: 'polyline', a: { points: '4,12 9,17 20,6' } }],
+    x: [{ t: 'line', a: { x1: 5, y1: 5, x2: 19, y2: 19 } },
+        { t: 'line', a: { x1: 19, y1: 5, x2: 5, y2: 19 } }],
+    'help-circle': [{ t: 'circle', a: { cx: 12, cy: 10, r: 7 } },
+                    { t: 'line', a: { x1: 12, y1: 18, x2: 12, y2: 18.01 } }],
+    'arrow-up': [{ t: 'polyline', a: { points: '6,15 12,9 18,15' } },
+                 { t: 'line', a: { x1: 12, y1: 9, x2: 12, y2: 20 } }],
+    'arrow-down': [{ t: 'polyline', a: { points: '6,9 12,15 18,9' } },
+                   { t: 'line', a: { x1: 12, y1: 4, x2: 12, y2: 15 } }],
+    lock: [{ t: 'rect', a: { x: 5, y: 11, width: 14, height: 10, rx: 2 } },
+           { t: 'path', a: { d: 'M8 11V7a4 4 0 0 1 8 0v4' } }],
+    'alert-triangle': [{ t: 'polygon', a: { points: '12,3 22,20 2,20' } },
+                       { t: 'line', a: { x1: 12, y1: 9, x2: 12, y2: 13 } },
+                       { t: 'line', a: { x1: 12, y1: 16, x2: 12, y2: 16.01 } }],
+    star: [{ t: 'polygon', a: { points: '12,2 15,9 22,9 16.5,13.5 18.5,21 12,17 5.5,21 7.5,13.5 2,9 9,9' } }],
+    undo: [{ t: 'path', a: { d: 'M3 10h10a5 5 0 0 1 0 10h-2' } },
+           { t: 'polyline', a: { points: '7,6 3,10 7,14' } }]
+  };
+  function icon(name) {
+    var svg = svgEl('svg', { viewBox: '0 0 24 24', width: '16', height: '16', fill: 'none',
+      stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+      class: 'icon', 'aria-hidden': 'true' });
+    (ICON_SHAPES[name] || []).forEach(function (shape) { svg.appendChild(svgEl(shape.t, shape.a)); });
+    return svg;
+  }
+  // Botao/rotulo com icone + texto (nunca so o icone — acessibilidade).
+  function iconLabel(tag, name, texto) {
+    var n = document.createElement(tag);
+    n.appendChild(icon(name));
+    n.appendChild(document.createTextNode(' ' + texto));
+    return n;
+  }
 
   function parseHash() {
     var out = { screen: '', card: '', api: '' };
@@ -156,7 +208,8 @@
   // Fase 1 do redesign (plano pos-Arco-C): link de volta para a Home nas telas contextuais
   // (plan/question/permission). Nao substitui `tg.close()` — esse continua so em decisao enviada.
   function backLink(ctx) {
-    var a = el('button', 'back-link', L.back);
+    var a = iconLabel('button', 'back', L.back);
+    a.className = 'back-link';
     a.type = 'button';
     a.onclick = function () { renderScreen({ api: ctx.api, who: ctx.who, screen: 'home', card: '' }); };
     return a;
@@ -203,10 +256,11 @@
               });
           };
           var planClasses = { execute: 'btn-success', modify: 'btn-neutral', auto_review: 'btn-neutral' };
+          var planIcons = { execute: 'play', modify: 'edit', auto_review: 'search' };
           (c.options || []).forEach(function (opt) {
-            var b = document.createElement('button');
+            var texto = opt === 'execute' ? L.planExecute : opt === 'modify' ? L.planModify : L.planAutoReview;
+            var b = iconLabel('button', planIcons[opt] || 'play', texto);
             b.className = planClasses[opt] || 'btn-neutral';
-            b.textContent = opt === 'execute' ? L.planExecute : opt === 'modify' ? L.planModify : L.planAutoReview;
             b.onclick = function () { send(opt); };
             bar.appendChild(b);
           });
@@ -289,7 +343,7 @@
       if (json.kind !== 'permission') { root.appendChild(h.el('p', 'err', L.permUnavailable)); return; }
       if (json.state !== 'open') { root.appendChild(h.el('p', 'muted', L.permAnswered)); return; }
       var payload = json.payload || {};
-      root.appendChild(h.el('h1', null, L.permTitle));
+      root.appendChild(iconLabel('h1', 'shield', L.permTitle));
       root.appendChild(h.el('p', 'meta', L.permTool + payload.tool + L.permTier + payload.tier));
       root.appendChild(h.el('p', null, L.permReason + (payload.reason || '')));
       root.appendChild(h.el('pre', null, payload.text || ''));
@@ -297,10 +351,10 @@
       bar.className = 'actions';
       var labels = { a: L.permAllow, d: L.permDeny, l: L.permLocal };
       var permClasses = { a: 'btn-success', d: 'btn-danger', l: 'btn-neutral' };
+      var permIcons = { a: 'check', d: 'x', l: 'help-circle' };
       (json.options || []).forEach(function (code) {
-        var b = document.createElement('button');
+        var b = iconLabel('button', permIcons[code] || 'help-circle', labels[code] || code);
         b.className = permClasses[code] || 'btn-neutral';
-        b.textContent = labels[code] || code;
         b.onclick = function () {
           new Promise(function (res) { tg.showConfirm(L.planConfirm + ' ' + (labels[code] || code) + '?', res); })
             .then(function (ok) {
@@ -326,15 +380,15 @@
       stateBar.className = 'actions state-actions';
       var floorLabel = h.el('p', 'meta', '');
       var autoBtn = document.createElement('button');
-      var upBtn = document.createElement('button');
-      upBtn.textContent = L.permFloorUp;
-      var downBtn = document.createElement('button');
-      downBtn.textContent = L.permFloorDown;
+      var upBtn = iconLabel('button', 'arrow-up', L.permFloorUp);
+      var downBtn = iconLabel('button', 'arrow-down', L.permFloorDown);
 
       function refreshEstado(auto, floor) {
         estado.auto = !!auto;
         if (floor) estado.floor = String(floor);
-        autoBtn.textContent = estado.auto ? L.permAutoOff : L.permAutoOn;
+        clear(autoBtn);
+        autoBtn.appendChild(icon(estado.auto ? 'x' : 'play'));
+        autoBtn.appendChild(document.createTextNode(' ' + (estado.auto ? L.permAutoOff : L.permAutoOn)));
         floorLabel.textContent = L.permFloorNow + estado.floor;
       }
       function setBusy(v) {
@@ -433,7 +487,7 @@
     var s = screenNode(); clear(s);
     renderTabs(ctx.screen);
     var fn = SCREENS[ctx.screen];
-    if (typeof fn === 'function') { fn(ctx, s, { el: el, clear: clear, api: api, L: L, fallback: showFallback }); return; }
+    if (typeof fn === 'function') { fn(ctx, s, { el: el, clear: clear, api: api, L: L, fallback: showFallback, icon: icon, iconLabel: iconLabel }); return; }
     s.appendChild(el('p', 'muted', L.preparing));
     document.getElementById('foot').hidden = false;
     var btn = document.getElementById('btn-close'); btn.textContent = L.close;
