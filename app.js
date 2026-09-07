@@ -121,6 +121,20 @@
     return n;
   }
 
+  // Fase 3 do redesign: esqueleto de carregamento — substitui a tela em branco entre abrir e o
+  // `h.api(...)` resolver. Devolve uma funcao pra remover, chamada no primeiro `.then`/`.catch`.
+  function skeleton(root) {
+    var wrap = document.createElement('div');
+    wrap.className = 'skeleton';
+    for (var i = 0; i < 3; i++) {
+      var linha = document.createElement('div');
+      linha.className = 'skeleton-line';
+      wrap.appendChild(linha);
+    }
+    root.appendChild(wrap);
+    return function limpar() { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); };
+  }
+
   function parseHash() {
     var out = { screen: '', card: '', api: '' };
     var raw = (location.hash || '').replace(/^#/, '');
@@ -219,7 +233,9 @@
   // para a Fase 6c (Task 13) acrescentar os botoes de decisao sem refazer o fetch.
   SCREENS.plan = function (ctx, root, h) {
     root.appendChild(backLink(ctx));
+    var limpar = h.skeleton(root);
     h.api(ctx, 'GET', 'plan/current').then(function (json) {
+      limpar();
       var meta = h.el('p', 'meta', 'Rodada ' + json.round + ' · hash ' +
         String(json.hash).slice(0, 12) + ' · ' + json.plan.length + ' caracteres');
       root.appendChild(meta);
@@ -268,7 +284,7 @@
           root.appendChild(bar);
         }).catch(function () { /* sem card acessivel: tela fica so leitura, como na Task 4 */ });
       }
-    }).catch(function () { h.fallback(); });
+    }).catch(function () { limpar(); h.fallback(); });
   };
 
   // Fase 6b (Task 11): formulario da pergunta, respondido pela Mini App. `ctx.card` vem do
@@ -276,7 +292,9 @@
   SCREENS.question = function (ctx, root, h) {
     root.appendChild(backLink(ctx));
     var cardId = ctx.card || '';
+    var limpar = h.skeleton(root);
     h.api(ctx, 'GET', 'cards/' + encodeURIComponent(cardId)).then(function (json) {
+      limpar();
       if (json.state !== 'open') { root.appendChild(h.el('p', 'muted', L.qAnswered)); return; }
       var perguntas = (json.payload && json.payload.questions) || [];
       if (json.payload && json.payload.context) {
@@ -329,7 +347,7 @@
             else tg.showAlert(L.qSendFail + status + ').');
           });
       });
-    }).catch(function () { root.appendChild(h.el('p', 'err', L.qUnavailable)); });
+    }).catch(function () { limpar(); root.appendChild(h.el('p', 'err', L.qUnavailable)); });
   };
 
   // Fase 6d (Task 15): decisao de permissao (allow/deny/local) via card `kind=permission`.
@@ -339,7 +357,9 @@
   SCREENS.permission = function (ctx, root, h) {
     root.appendChild(backLink(ctx));
     var cardId = ctx.card || '';
+    var limpar = h.skeleton(root);
     h.api(ctx, 'GET', 'cards/' + encodeURIComponent(cardId)).then(function (json) {
+      limpar();
       if (json.kind !== 'permission') { root.appendChild(h.el('p', 'err', L.permUnavailable)); return; }
       if (json.state !== 'open') { root.appendChild(h.el('p', 'muted', L.permAnswered)); return; }
       var payload = json.payload || {};
@@ -429,19 +449,26 @@
       stateBar.appendChild(upBtn);
       stateBar.appendChild(downBtn);
       root.appendChild(stateBar);
-    }).catch(function () { h.fallback(); });
+    }).catch(function () { limpar(); h.fallback(); });
   };
 
   // Fase 1 do redesign (plano pos-Arco-C): tela inicial quando a Mini App abre sem `#screen`
   // (Menu Button do Telegram). Mostra um resumo do status e, se houver, um atalho para retomar
-  // uma decisao em aberto no Decision Inbox (GET pending — leitura, nunca decide nada).
+  // uma decisao em aberto no Decision Inbox (GET pending — leitura, nunca decide nada). Duas
+  // buscas independentes (status/pending); o esqueleto some quando as duas terminarem, sucesso ou
+  // falha — nenhuma delas sozinha decide o estado de carregamento da tela toda.
   SCREENS.home = function (ctx, root, h) {
+    var limpar = h.skeleton(root);
+    var restantes = 2;
+    function tick() { restantes -= 1; if (restantes <= 0) limpar(); }
     h.api(ctx, 'GET', 'status').then(function (resp) {
       var s = (resp && resp.status) || {};
       root.appendChild(h.el('p', 'muted', s.state || '?'));
-    }).catch(function () { /* resumo e so um extra; a Home continua util sem ele */ });
+      tick();
+    }).catch(function () { tick(); /* resumo e so um extra; a Home continua util sem ele */ });
     h.api(ctx, 'GET', 'pending').then(function (resp) {
       var card = resp && resp.card;
+      tick();
       if (!card) return;
       var box = document.createElement('div');
       box.className = 'card';
@@ -453,7 +480,7 @@
       };
       box.appendChild(btn);
       root.appendChild(box);
-    }).catch(function () { /* sem pendencia detectavel: Home segue normal */ });
+    }).catch(function () { tick(); /* sem pendencia detectavel: Home segue normal */ });
   };
 
   // Fase 1 do redesign (plano pos-Arco-C): shell de navegacao. `home`/`status`/`config` sao as
@@ -487,7 +514,7 @@
     var s = screenNode(); clear(s);
     renderTabs(ctx.screen);
     var fn = SCREENS[ctx.screen];
-    if (typeof fn === 'function') { fn(ctx, s, { el: el, clear: clear, api: api, L: L, fallback: showFallback, icon: icon, iconLabel: iconLabel }); return; }
+    if (typeof fn === 'function') { fn(ctx, s, { el: el, clear: clear, api: api, L: L, fallback: showFallback, icon: icon, iconLabel: iconLabel, skeleton: skeleton }); return; }
     s.appendChild(el('p', 'muted', L.preparing));
     document.getElementById('foot').hidden = false;
     var btn = document.getElementById('btn-close'); btn.textContent = L.close;

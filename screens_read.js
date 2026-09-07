@@ -29,7 +29,9 @@
   }
 
   S.status = function (ctx, root, h) {
+    var limpar = h.skeleton(root);
     h.api(ctx, 'GET', 'status').then(function (resp) {
+      limpar();
       var t = T[resp.lang === 'pt' ? 'pt' : 'en'];
       var s = resp.status || {};
       var card = h.el('div', 'card');
@@ -53,7 +55,7 @@
         });
       }
       if (s.failures && s.failures.length) { root.appendChild(h.el('h2', null, t.failures)); root.appendChild(h.el('p', 'err', s.failures.join('; '))); }
-    }).catch(function () { h.fallback(); });
+    }).catch(function () { limpar(); h.fallback(); });
   };
 
   // Fase 6a: `S.config` ganha escrita. `h.api` rejeita sem corpo em erro (util pro GET), mas
@@ -128,7 +130,9 @@
 
   S.config = function (ctx, root, h) {
     var onDone = function () { S.config(ctx, root, h); };
+    var limpar = h.skeleton(root);
     h.api(ctx, 'GET', 'config').then(function (resp) {
+      limpar();
       h.clear(root);
       var t = T[resp.lang === 'pt' ? 'pt' : 'en'];
       var pReadonly = h.iconLabel('p', 'lock', t.readonly);
@@ -156,7 +160,7 @@
         });
       };
       root.appendChild(undo);
-    }).catch(function () { h.fallback(); });
+    }).catch(function () { limpar(); h.fallback(); });
   };
 
   function lista(ctx, itens, t, h, onDone) {
