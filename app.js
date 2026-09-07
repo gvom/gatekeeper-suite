@@ -29,6 +29,7 @@
           permAlreadyChat: 'Já decidido pelo chat.',
           permAutoOn: 'Ativar automático', permAutoOff: 'Desligar automático',
           permFloorUp: '⬆ Subir piso', permFloorDown: '⬇ Descer piso', permFloorNow: 'Piso atual: ',
+          permApplying: 'Aplicando…',
           permStateFail: 'Não foi possível aplicar agora — tente de novo.' },
     en: { connecting: 'Connecting…', offline: 'Backend unavailable — answer in chat.',
           close: 'Close', badApi: 'Invalid API address.', notTelegram: 'Open from Telegram.',
@@ -49,6 +50,7 @@
           permAlreadyChat: 'Already decided in chat.',
           permAutoOn: 'Turn autonomous on', permAutoOff: 'Turn autonomous off',
           permFloorUp: '⬆ Raise floor', permFloorDown: '⬇ Lower floor', permFloorNow: 'Current floor: ',
+          permApplying: 'Applying…',
           permStateFail: 'Could not apply now — try again.' }
   };
 
@@ -331,14 +333,34 @@
         autoBtn.textContent = estado.auto ? L.permAutoOff : L.permAutoOn;
         floorLabel.textContent = L.permFloorNow + estado.floor;
       }
+      function setBusy(v) {
+        autoBtn.disabled = v; upBtn.disabled = v; downBtn.disabled = v;
+        if (v) floorLabel.textContent = L.permApplying;
+      }
+      // O laco que aplica a acao (gatekeeper.py) so reavalia o card a cada volta do seu proprio
+      // polling do Telegram — uma unica releitura logo apos o POST via de regra pega o card
+      // ainda com a acao pendente. Reconsulta curta ate `pending_state_action` sumir (aplicada)
+      // ou esgotar as tentativas, em vez de mostrar estado desatualizado como se nada tivesse
+      // acontecido.
+      function pollAteAplicar(tentativas) {
+        return h.api(ctx, 'GET', 'cards/' + encodeURIComponent(cardId)).then(function (json2) {
+          if (json2.pending_state_action && tentativas > 0) {
+            return new Promise(function (res) { setTimeout(res, 700); })
+              .then(function () { return pollAteAplicar(tentativas - 1); });
+          }
+          return json2;
+        });
+      }
       function sendState(code) {
+        setBusy(true);
         h.api(ctx, 'POST', 'cards-action/' + encodeURIComponent(cardId), { action: code })
-          .then(function () { return h.api(ctx, 'GET', 'cards/' + encodeURIComponent(cardId)); })
+          .then(function () { return pollAteAplicar(8); })
           .then(function (json2) {
             var p2 = json2.payload || {};
             refreshEstado(p2.auto, p2.floor);
           })
-          .catch(function () { tg.showAlert(L.permStateFail); });
+          .catch(function () { tg.showAlert(L.permStateFail); refreshEstado(estado.auto, estado.floor); })
+          .then(function () { setBusy(false); });
       }
       autoBtn.onclick = function () { sendState(estado.auto ? 'C' : 'A'); };
       upBtn.onclick = function () { sendState('U'); };
