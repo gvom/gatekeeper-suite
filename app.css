@@ -77,3 +77,8 @@ h1 .icon, h2 .icon { vertical-align: -2px; }
 pre { white-space: pre-wrap; word-break: break-word; background: var(--card);
   border-radius: 12px; padding: 12px; font-size: 13px; }
 h2 { font-size: 17px; margin: 16px 0 6px; }
+/* Fase 4 do redesign: categorias expansiveis do config — mesmo peso visual do h2, sem marcador
+   customizado (o triangulo nativo do <details> ja basta). */
+details { margin: 16px 0 6px; }
+details summary { font-size: 17px; font-weight: 600; cursor: pointer; }
+details[open] summary { margin-bottom: 6px; }

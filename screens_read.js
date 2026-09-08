@@ -144,14 +144,21 @@
       var ess = (resp.essentials || []).map(function (k) { return porChave[k]; }).filter(Boolean);
       if (ess.length) { root.appendChild(h.iconLabel('h2', 'star', t.essentials)); root.appendChild(lista(ctx, ess, t, h, onDone)); }
       // Depois por categoria › grupo, na ordem do registry.
+      // Fase 4 do redesign: `<details>`/`<summary>` — abre/fecha sozinho, sem JS de toggle,
+      // acessivel e funciona com toque. Nao precisa de CDN nem string de HTML: o navegador ja
+      // sabe renderizar o triangulo/estado nativo do elemento.
       (resp.categories || []).forEach(function (cat) {
         var itens = (resp.settings || []).filter(function (s) { return s.category === cat; });
         if (!itens.length) return;
-        root.appendChild(h.el('h2', null, cat));
+        var det = document.createElement('details');
+        var sum = document.createElement('summary');
+        sum.textContent = cat;
+        det.appendChild(sum);
         var grupos = {};
         var ordem = [];
         itens.forEach(function (s) { var g = s.groupLabel || ''; if (!(g in grupos)) { grupos[g] = []; ordem.push(g); } grupos[g].push(s); });
-        ordem.forEach(function (g) { if (g) root.appendChild(h.el('p', 'muted', g)); root.appendChild(lista(ctx, grupos[g], t, h, onDone)); });
+        ordem.forEach(function (g) { if (g) det.appendChild(h.el('p', 'muted', g)); det.appendChild(lista(ctx, grupos[g], t, h, onDone)); });
+        root.appendChild(det);
       });
       var undo = h.iconLabel('button', 'undo', t.undo);
       undo.onclick = function () {
