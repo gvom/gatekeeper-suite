@@ -23,6 +23,7 @@
           planFeedback: 'O que deve mudar? (para Modificar)', planWriteWhat: 'Escreva o que deve mudar.',
           planConfirm: 'Confirmar:', planAlreadyChat: 'Já decidido pelo chat.',
           planExecute: 'Executar', planModify: 'Modificar', planAutoReview: 'Auto revisar',
+          planJumpToDecision: 'Ir para a decisão',
           permUnavailable: 'Pedido indisponível — decida pelo chat.', permAnswered: 'Este pedido já foi decidido.',
           permTitle: 'Guardian pede confirmação', permTool: 'Ferramenta: ', permTier: ' · risco: ',
           permReason: 'Motivo: ', permAllow: 'Allow', permDeny: 'Deny', permLocal: 'Local',
@@ -44,6 +45,7 @@
           planFeedback: 'What should change? (for Modify)', planWriteWhat: 'Write what should change.',
           planConfirm: 'Confirm:', planAlreadyChat: 'Already decided in chat.',
           planExecute: 'Execute', planModify: 'Modify', planAutoReview: 'Auto review',
+          planJumpToDecision: 'Jump to decision',
           permUnavailable: 'Request unavailable — decide in chat.', permAnswered: 'This request was already decided.',
           permTitle: 'Guardian asks for confirmation', permTool: 'Tool: ', permTier: ' · risk: ',
           permReason: 'Reason: ', permAllow: 'Allow', permDeny: 'Deny', permLocal: 'Local',
@@ -223,6 +225,14 @@
   }
 
   // Registro de telas: plano 01 Task 10 preenche status/config; plano 02 preenche plan/question/permission.
+  //
+  // Fase 4 do redesign: regra fixada pra qualquer tela nova nao misturar por acidente —
+  //   `tg.MainButton` (area fixa nativa do Telegram, sempre visivel embaixo): reservado pra UMA
+  //   acao so por tela (hoje: `question`, "Enviar resposta" — sempre a mesma acao, decide tudo
+  //   de uma vez).
+  //   Botoes inline (`bar.appendChild(b)`, dentro do conteudo da tela): reservados pra decisao
+  //   com MULTIPLAS opcoes terminais (hoje: `plan` — Execute/Modify/AutoReview; `permission` —
+  //   Allow/Deny/Local). Nunca as duas formas pro MESMO fluxo de decisao na mesma tela.
   var SCREENS = {};
   window.GK_SCREENS = SCREENS;
 
@@ -260,6 +270,15 @@
           }
           var bar = document.createElement('div');
           bar.className = 'actions';
+          bar.id = 'plan-decision-bar';
+          // Fase 4 do redesign: plano longo empurra a decisao pra baixo do scroll — um atalho
+          // logo apos os metadados rola ate a barra sem precisar descer manualmente.
+          if (String(json.plan || '').length > 1500) {
+            var jump = iconLabel('button', 'arrow-down', L.planJumpToDecision);
+            jump.className = 'btn-neutral';
+            jump.onclick = function () { bar.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+            root.insertBefore(jump, body);
+          }
           var feedback = document.createElement('textarea');
           feedback.placeholder = L.planFeedback;
           feedback.maxLength = 4000;
