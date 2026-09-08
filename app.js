@@ -307,11 +307,22 @@
       if (json.payload && json.payload.context) {
         root.appendChild(h.el('pre', 'ctx', json.payload.context));
       }
+      // Fase 4 do redesign: feedback de validacao inline (marcador por pergunta) e indicador de
+      // progresso (com mais de uma pergunta) — antes so se descobria o que faltava ao tentar
+      // enviar (tg.showAlert). Aditivo: o alerta final continua como rede de seguranca.
+      var progresso = perguntas.length > 1 ? h.el('p', 'meta', '') : null;
+      if (progresso) root.appendChild(progresso);
       var form = document.createElement('form');
+      var marcadores = [];
       perguntas.forEach(function (q, qi) {
         var fs = document.createElement('fieldset');
         var titulo = (q.header ? q.header + ' — ' : '') + q.question;
-        fs.appendChild(h.el('legend', null, titulo));
+        var legend = document.createElement('legend');
+        var marcador = document.createElement('span');
+        legend.appendChild(marcador);
+        legend.appendChild(document.createTextNode(' ' + titulo));
+        marcadores.push(marcador);
+        fs.appendChild(legend);
         (q.options || []).forEach(function (o, oi) {
           var label = document.createElement('label');
           var input = document.createElement('input');
@@ -324,6 +335,18 @@
         });
         form.appendChild(fs);
       });
+      function atualizaValidacao() {
+        var respondidas = 0;
+        perguntas.forEach(function (q, qi) {
+          var ok = form.querySelectorAll('input[name="q' + qi + '"]:checked').length > 0;
+          if (ok) respondidas += 1;
+          h.clear(marcadores[qi]);
+          if (ok) marcadores[qi].appendChild(h.icon('check'));
+        });
+        if (progresso) progresso.textContent = respondidas + ' / ' + perguntas.length;
+      }
+      form.addEventListener('change', atualizaValidacao);
+      atualizaValidacao();
       root.appendChild(form);
       var mb = tg && tg.MainButton;
       if (!mb) return;
