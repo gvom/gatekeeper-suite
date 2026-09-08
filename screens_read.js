@@ -175,13 +175,25 @@
     itens.forEach(function (s) {
       var r = h.el('div', 'row');
       var k = h.el('span', 'k', s.key.replace(/^(GATEKEEPER|GOVERNOR)_/, ''));
-      k.title = s.help || s.description || '';
       var v = h.el('span', 'v', String(s.value));
       if (!s.editable) v.appendChild(h.icon('lock'));
       if (s.shadowed) { v.appendChild(h.icon('alert-triangle')); v.title = t.shadowed; }
       r.appendChild(k); r.appendChild(v);
       attachEditor(ctx, r, s, onDone);
       card.appendChild(r);
+      // Fase 4 do redesign: ajuda tocavel no lugar do `title` — um tooltip HTML nativo so abre
+      // com hover, invisivel em touchscreen. A chave vira um disclosure: toca, mostra o texto
+      // logo abaixo da linha; toca de novo, esconde.
+      var ajuda = s.help || s.description || '';
+      if (ajuda) {
+        var desc = h.el('p', 'muted help-desc', ajuda);
+        desc.hidden = true;
+        k.className = 'k k-help';
+        k.setAttribute('role', 'button');
+        k.setAttribute('tabindex', '0');
+        k.onclick = function () { desc.hidden = !desc.hidden; };
+        card.appendChild(desc);
+      }
     });
     return card;
   }
