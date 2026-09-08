@@ -29,6 +29,13 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg);
   font: 16px/1.4 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
+/* Fase 3 do redesign: largura maxima so limita o Telegram Desktop (janela larga) — no celular a
+   viewport ja e mais estreita que isso e a regra nao tem efeito nenhum. */
+body { max-width: 480px; margin: 0 auto; }
+#screen { transition: opacity var(--transition-fast); }
+#screen.fading { opacity: 0; }
+button { transition: transform var(--transition-fast); }
+button:active { transform: scale(.97); }
 #topbar { display: flex; align-items: center; justify-content: space-between;
   padding: max(12px, env(safe-area-inset-top)) 16px 8px; }
 #title { font-weight: 600; }

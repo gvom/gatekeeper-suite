@@ -518,14 +518,21 @@
 
   function renderScreen(ctx) {
     currentCtx = ctx;
-    var s = screenNode(); clear(s);
+    var s = screenNode();
+    // Fase 3 do redesign: fade sutil ao trocar de tela — opacidade a 0, troca o conteudo, remove
+    // a classe no proximo frame pra a transicao CSS (`--transition-fast`) animar de volta a 1.
+    s.classList.add('fading');
+    clear(s);
     renderTabs(ctx.screen);
     var fn = SCREENS[ctx.screen];
-    if (typeof fn === 'function') { fn(ctx, s, { el: el, clear: clear, api: api, L: L, fallback: showFallback, icon: icon, iconLabel: iconLabel, skeleton: skeleton }); return; }
-    s.appendChild(el('p', 'muted', L.preparing));
-    document.getElementById('foot').hidden = false;
-    var btn = document.getElementById('btn-close'); btn.textContent = L.close;
-    btn.onclick = function () { if (tg) tg.close(); };
+    if (typeof fn === 'function') { fn(ctx, s, { el: el, clear: clear, api: api, L: L, fallback: showFallback, icon: icon, iconLabel: iconLabel, skeleton: skeleton }); }
+    else {
+      s.appendChild(el('p', 'muted', L.preparing));
+      document.getElementById('foot').hidden = false;
+      var btn = document.getElementById('btn-close'); btn.textContent = L.close;
+      btn.onclick = function () { if (tg) tg.close(); };
+    }
+    requestAnimationFrame(function () { s.classList.remove('fading'); });
   }
 
   function boot() {
