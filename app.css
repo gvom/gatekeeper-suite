@@ -39,11 +39,17 @@ button:active { transform: scale(.97); }
   padding: max(12px, env(safe-area-inset-top)) 16px 8px; }
 #title { font-weight: 600; }
 .badge { font-size: 12px; color: var(--hint); }
-#tabs { display: flex; gap: 8px; padding: 0 16px 8px; }
-#tabs .tab { width: auto; flex: 1; background: transparent; color: var(--fg);
-  border: 1px solid var(--border); font-weight: 500; }
-#tabs .tab-active { background: var(--btn); color: var(--btn-fg); border-color: var(--btn); }
-#screen { padding: 8px 16px max(16px, env(safe-area-inset-bottom)); }
+/* Fase 8 do redesign (Rodada 2): barra de navegacao vira rodape fixo (padrao de app nativo
+   mobile) — mantem a posicao no DOM (entre #topbar e #screen em index.html), so a posicao visual
+   muda. `#screen` ganha padding-bottom equivalente pra nenhum conteudo ficar escondido atras. */
+#tabs { display: flex; gap: 8px; padding: 8px 16px max(8px, env(safe-area-inset-bottom));
+  position: fixed; left: 0; right: 0; bottom: 0; background: var(--card);
+  border-top: 1px solid var(--border); z-index: 10; }
+#tabs .tab { width: auto; flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: 2px; background: transparent; color: var(--fg); border: 0; font-weight: 500;
+  font-size: var(--font-sm); }
+#tabs .tab-active { color: var(--btn); }
+#screen { padding: 8px 16px calc(64px + env(safe-area-inset-bottom)); }
 #foot { padding: 8px 16px max(16px, env(safe-area-inset-bottom)); }
 button { width: 100%; padding: 12px; border: 0; border-radius: 10px;
   background: var(--btn); color: var(--btn-fg); font-size: 16px; }
