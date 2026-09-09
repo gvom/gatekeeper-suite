@@ -11,14 +11,16 @@
           essentials: 'Essenciais', readonly: '= trava pelo ambiente do processo, não editável aqui.',
           shadowed: 'valor vindo do ambiente do processo; gravar não teria efeito', none: 'nenhum',
           undo: 'Desfazer última', restartQ: 'Reiniciar o daemon agora?',
-          save: 'Salvar', cancel: 'Cancelar', emptyValue: '(vazio)' },
+          save: 'Salvar', cancel: 'Cancelar', emptyValue: '(vazio)',
+          activeSessions: 'Sessões ativas' },
     en: { state: 'State', session: 'Session', inflight: 'Tools in flight', subagents: 'Subagents',
           indicative: 'indicative', goal: 'Goal', phase: 'Phase', open: 'Open phases',
           waiting: 'Waiting', activity: 'Last activity', notes: 'Notes', failures: 'Failures',
           essentials: 'Essentials', readonly: '= locked by the process environment, not editable here.',
           shadowed: 'value comes from the process environment; writing would have no effect', none: 'none',
           undo: 'Undo last', restartQ: 'Restart the daemon now?',
-          save: 'Save', cancel: 'Cancel', emptyValue: '(empty)' }
+          save: 'Save', cancel: 'Cancel', emptyValue: '(empty)',
+          activeSessions: 'Active sessions' }
   };
 
   function row(h, k, v) {
@@ -57,6 +59,23 @@
         });
       }
       if (s.failures && s.failures.length) { root.appendChild(h.el('h2', null, t.failures)); root.appendChild(h.el('p', 'err', s.failures.join('; '))); }
+      // Fase 11 do redesign (Rodada 2): alem do resumo "desta" sessao acima, lista TODAS as
+      // sessoes ativas do gatekeeper -- dado novo (ManifestStore.open_runs() inteiro), busca
+      // independente, falha aqui nao invalida o card de status principal.
+      h.api(ctx, 'GET', 'sessions').then(function (respSessoes) {
+        var lista = (respSessoes && respSessoes.sessions) || [];
+        if (!lista.length) return;
+        root.appendChild(h.el('h2', null, t.activeSessions));
+        lista.forEach(function (sess) {
+          var c = h.el('div', 'card');
+          c.appendChild(row(h, t.session, sess.sessionId || '?'));
+          c.appendChild(row(h, t.state, sess.state || '?'));
+          if (sess.goal) c.appendChild(row(h, t.goal, sess.goal));
+          if (sess.currentPhase) c.appendChild(row(h, t.phase, sess.currentPhase));
+          if (sess.pendingInteraction) c.appendChild(row(h, t.waiting, sess.pendingInteraction));
+          root.appendChild(c);
+        });
+      }).catch(function () { /* lista de sessoes e so um extra; o status principal ja apareceu */ });
     }).catch(function () { limpar(); h.fallback(undefined, function () { S.status(ctx, root, h); }); });
   };
 
