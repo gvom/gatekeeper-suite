@@ -1,30 +1,29 @@
 :root {
-  --bg: var(--tg-theme-bg-color, #ffffff);
-  --fg: var(--tg-theme-text-color, #111111);
-  --hint: var(--tg-theme-hint-color, #777777);
-  --link: var(--tg-theme-link-color, #2a7de1);
-  --btn: var(--tg-theme-button-color, #2a7de1);
-  --btn-fg: var(--tg-theme-button-text-color, #ffffff);
-  --card: var(--tg-theme-secondary-bg-color, #f3f4f6);
+  /* Fase 7 do redesign (Rodada 2): paleta fixa e propria — decisao do dono de parar de se fundir
+     ao tema do Telegram. Uma variante so, sem alternancia clara/escura; nenhum token deriva mais
+     de --tg-theme-*. */
+  --bg: #0f1115;
+  --fg: #e8eaed;
+  --hint: #9aa0ac;
+  --link: #6d5ef8;
+  --btn: #6d5ef8;
+  --btn-fg: #ffffff;
+  --card: #1a1d24;
+  --border: #2a2e37;
 
-  /* Fase 3 do redesign: tokens de espacamento/raio/tipografia/transicao — nunca substituem os
-     tokens de tema acima, so somam papeis novos por cima. */
+  /* Fase 3 do redesign: tokens de espacamento/raio/tipografia/transicao. */
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
   --radius-sm: 8px; --radius-md: 10px; --radius-lg: 12px;
   --font-sm: 13px; --font-lg: 17px;
   --transition-fast: 120ms ease;
 
   /* Papeis semanticos de cor — mesma linguagem que o chat ja usa via `style` da Bot API
-     (success/danger/primary). `--danger` deriva de um tema nativo do Telegram quando existe;
-     `--success`/`--warning` nao tem equivalente no Telegram, entao usam estatico com variante
-     escura em [data-scheme="dark"] (ver boot() em app.js). */
-  --success: #2ea043; --success-fg: #ffffff;
-  --danger: var(--tg-theme-destructive-text-color, #d32f2f); --danger-fg: #ffffff;
-  --warning: #b26a00; --warning-fg: #ffffff;
-}
-:root[data-scheme="dark"] {
-  --success: #3fb950;
-  --warning: #d29922;
+     (success/danger/primary). Todos fixos agora (paleta unica, sem tema do cliente). --danger
+     ganha tom distinto de `.err` (erro de rede) de proposito — bloqueio e erro tecnico nao podem
+     parecer a mesma cor. */
+  --success: #3fb950; --success-fg: #ffffff;
+  --danger: #f0483e; --danger-fg: #ffffff;
+  --warning: #d29922; --warning-fg: #ffffff;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg);
@@ -42,7 +41,7 @@ button:active { transform: scale(.97); }
 .badge { font-size: 12px; color: var(--hint); }
 #tabs { display: flex; gap: 8px; padding: 0 16px 8px; }
 #tabs .tab { width: auto; flex: 1; background: transparent; color: var(--fg);
-  border: 1px solid rgba(127,127,127,.25); font-weight: 500; }
+  border: 1px solid var(--border); font-weight: 500; }
 #tabs .tab-active { background: var(--btn); color: var(--btn-fg); border-color: var(--btn); }
 #screen { padding: 8px 16px max(16px, env(safe-area-inset-bottom)); }
 #foot { padding: 8px 16px max(16px, env(safe-area-inset-bottom)); }
@@ -62,7 +61,7 @@ button { width: 100%; padding: 12px; border: 0; border-radius: 10px;
    de linha quando nao cabe, e `.k`/`.v` ganham `min-width:0` — sem isso um item flex recusa
    encolher abaixo do conteudo intrinseco, mesmo com word-break. */
 .row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 6px 0;
-  border-bottom: 1px solid rgba(127,127,127,.15); }
+  border-bottom: 1px solid var(--border); }
 .row:last-child { border-bottom: 0; }
 .k { color: var(--hint); min-width: 0; overflow-wrap: break-word; flex: 1 1 160px; }
 .k-help { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
@@ -71,7 +70,7 @@ button { width: 100%; padding: 12px; border: 0; border-radius: 10px;
 .muted { color: var(--hint); }
 .err { color: #c0392b; }
 .state-actions { margin-top: 16px; }
-.state-actions button { background: transparent; border: 1px solid rgba(127,127,127,.35);
+.state-actions button { background: transparent; border: 1px solid var(--border);
   color: var(--fg); margin-top: 8px; }
 /* Fase 3 do redesign: variantes semanticas de botao — mesma linguagem que o chat ja usa via
    `style` da Bot API (success/danger/primary). Reservadas ao que e TERMINAL (decisao final). */
