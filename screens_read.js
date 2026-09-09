@@ -136,7 +136,6 @@
         if (choice === item.value) opt.selected = true;
         sel.appendChild(opt);
       });
-      var valorAnterior = item.value;
       sel.onchange = function () {
         var escolha = sel.value;
         sel.disabled = true;
@@ -197,9 +196,10 @@
       var r = h.el('div', 'row');
       var k = h.el('span', 'k', s.key.replace(/^(GATEKEEPER|GOVERNOR)_/, ''));
       // Fase 9 do redesign (Rodada 2): quando o proprio controle ja demonstra o valor (switch
-      // pro bool; select/range/dialog vem nas proximas tasks desta fase), o texto duplicado em
-      // `.v` some -- o span continua existindo (vazio) so pra hospedar os icones de lock/shadowed.
-      var valorRedundante = s.editable && s.kind === 'bool';
+      // pro bool, select pro enum; range/dialog vem nas proximas tasks desta fase), o texto
+      // duplicado em `.v` some -- o span continua existindo (vazio) so pra hospedar os icones de
+      // lock/shadowed.
+      var valorRedundante = s.editable && (s.kind === 'bool' || s.kind === 'enum');
       var v = h.el('span', 'v', valorRedundante ? '' : String(s.value));
       if (!s.editable) v.appendChild(h.icon('lock'));
       if (s.shadowed) { v.appendChild(h.icon('alert-triangle')); v.title = t.shadowed; }
