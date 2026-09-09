@@ -580,10 +580,6 @@
   function boot() {
     if (!tg || !tg.initData) { showFallback(L.notTelegram); return; }
     tg.ready();
-    // Fase 3 do redesign: papeis de cor semanticos sem equivalente no tema do Telegram
-    // (success/warning) precisam saber claro/escuro — o Telegram nao usa prefers-color-scheme,
-    // usa o proprio tg.colorScheme.
-    document.documentElement.setAttribute('data-scheme', tg.colorScheme === 'dark' ? 'dark' : 'light');
     try { tg.expand(); } catch (e) { /* opcional */ }
     document.getElementById('loading').textContent = L.connecting;
     var ctx = parseHash();
