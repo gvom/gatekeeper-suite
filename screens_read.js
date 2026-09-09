@@ -10,13 +10,15 @@
           waiting: 'Aguardando', activity: 'Última atividade', notes: 'Observações', failures: 'Falhas',
           essentials: 'Essenciais', readonly: '= trava pelo ambiente do processo, não editável aqui.',
           shadowed: 'valor vindo do ambiente do processo; gravar não teria efeito', none: 'nenhum',
-          undo: 'Desfazer última', restartQ: 'Reiniciar o daemon agora?' },
+          undo: 'Desfazer última', restartQ: 'Reiniciar o daemon agora?',
+          save: 'Salvar', cancel: 'Cancelar', emptyValue: '(vazio)' },
     en: { state: 'State', session: 'Session', inflight: 'Tools in flight', subagents: 'Subagents',
           indicative: 'indicative', goal: 'Goal', phase: 'Phase', open: 'Open phases',
           waiting: 'Waiting', activity: 'Last activity', notes: 'Notes', failures: 'Failures',
           essentials: 'Essentials', readonly: '= locked by the process environment, not editable here.',
           shadowed: 'value comes from the process environment; writing would have no effect', none: 'none',
-          undo: 'Undo last', restartQ: 'Restart the daemon now?' }
+          undo: 'Undo last', restartQ: 'Restart the daemon now?',
+          save: 'Save', cancel: 'Cancel', emptyValue: '(empty)' }
   };
 
   function row(h, k, v) {
@@ -109,7 +111,7 @@
     });
   }
 
-  function attachEditor(ctx, row, item, onDone) {
+  function attachEditor(ctx, row, item, onDone, t) {
     if (!item.editable) return;
     if (item.kind === 'bool') {
       // Fase 9 do redesign (Rodada 2): switch nativo no lugar do botao on/off -- o proprio
@@ -184,6 +186,48 @@
         };
         row.appendChild(num);
       }
+      return;
+    }
+    if (item.kind === 'text' || item.kind === 'path') {
+      // Fase 9 do redesign (Rodada 2): chip que abre um <dialog> nativo pra editar -- resolve o
+      // overflow de tentar caber um input de texto na linha apertada do row, e o proprio chip ja
+      // mostra o valor atual (sem duplicar em `.v`).
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'row-control chip';
+      chip.textContent = item.value || t.emptyValue;
+      chip.onclick = function () {
+        var dlg = document.createElement('dialog');
+        dlg.className = 'gk-dialog';
+        var lbl = document.createElement('label');
+        lbl.textContent = item.key;
+        var inp = document.createElement('input');
+        inp.type = 'text';
+        inp.value = item.value;
+        var acoes = document.createElement('div');
+        acoes.className = 'gk-dialog-actions';
+        var cancelar = document.createElement('button');
+        cancelar.type = 'button';
+        cancelar.className = 'cancel';
+        cancelar.textContent = t.cancel;
+        cancelar.onclick = function () { dlg.close(); };
+        var salvar = document.createElement('button');
+        salvar.type = 'button';
+        salvar.textContent = t.save;
+        salvar.onclick = function () {
+          dlg.close();
+          writeSetting(ctx, item, inp.value, onDone);
+        };
+        acoes.appendChild(cancelar);
+        acoes.appendChild(salvar);
+        dlg.appendChild(lbl);
+        dlg.appendChild(inp);
+        dlg.appendChild(acoes);
+        dlg.addEventListener('close', function () { dlg.remove(); });
+        row.appendChild(dlg);
+        dlg.showModal();
+      };
+      row.appendChild(chip);
     }
   }
 
@@ -237,16 +281,18 @@
       // Fase 9 do redesign (Rodada 2): quando o proprio controle ja demonstra o valor (switch
       // pro bool, select pro enum, range com min/max pro numerico com intervalo -- o range tem
       // rotulo ao vivo proprio, so o number puro sem intervalo mantem `.v` pra nao virar
-      // ambiguo; dialog vem na proxima task desta fase), o texto duplicado em `.v` some -- o
-      // span continua existindo (vazio) so pra hospedar os icones de lock/shadowed.
+      // ambiguo; chip pro texto/caminho, o valor vira o proprio texto do chip), o texto
+      // duplicado em `.v` some -- o span continua existindo (vazio) so pra hospedar os icones de
+      // lock/shadowed.
       var valorRedundante = s.editable && (s.kind === 'bool' || s.kind === 'enum' ||
+        s.kind === 'text' || s.kind === 'path' ||
         (['int', 'float', 'duration_s', 'duration_ms'].indexOf(s.kind) !== -1 &&
          s.minimum !== null && s.minimum !== undefined && s.maximum !== null && s.maximum !== undefined));
       var v = h.el('span', 'v', valorRedundante ? '' : String(s.value));
       if (!s.editable) v.appendChild(h.icon('lock'));
       if (s.shadowed) { v.appendChild(h.icon('alert-triangle')); v.title = t.shadowed; }
       r.appendChild(k); r.appendChild(v);
-      attachEditor(ctx, r, s, onDone);
+      attachEditor(ctx, r, s, onDone, t);
       card.appendChild(r);
       // Fase 4 do redesign: ajuda tocavel no lugar do `title` — um tooltip HTML nativo so abre
       // com hover, invisivel em touchscreen. A chave vira um disclosure: toca, mostra o texto

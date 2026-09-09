@@ -69,6 +69,23 @@ select.row-control, input[type="number"].row-control { background: var(--card); 
   border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 16px; }
 input[type="range"].row-control { accent-color: var(--btn); }
 .range-val { flex: 1 1 100%; text-align: right; color: var(--hint); font-size: var(--font-sm); }
+/* Fase 9 do redesign (Rodada 2): chip que abre um <dialog> nativo pra editar texto/caminho --
+   resolve o overflow de caber um input na linha apertada do row, e o proprio chip demonstra o
+   valor atual (trunca com reticencias quando comprido). */
+.chip { text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gk-dialog { background: var(--card); color: var(--fg); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--space-4); max-width: 400px;
+  width: calc(100% - 32px); }
+.gk-dialog::backdrop { background: rgba(0, 0, 0, .5); }
+.gk-dialog label { display: block; margin-bottom: var(--space-2); color: var(--hint);
+  font-size: var(--font-sm); }
+.gk-dialog input[type="text"] { width: 100%; background: var(--bg); color: var(--fg);
+  border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px;
+  font-size: 16px; }
+.gk-dialog-actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
+.gk-dialog-actions button { width: auto; flex: 1; }
+.gk-dialog-actions .cancel { background: transparent; border: 1px solid var(--border);
+  color: var(--fg); }
 button { width: 100%; padding: 12px; border: 0; border-radius: 10px;
   background: var(--btn); color: var(--btn-fg); font-size: 16px; }
 /* Fase 6 do redesign (Rodada 2): controle dentro de `.row` (toggle booleano, escolhas de enum) —
