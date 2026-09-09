@@ -145,6 +145,45 @@
         });
       };
       row.appendChild(sel);
+      return;
+    }
+    var NUMERIC_KINDS = ['int', 'float', 'duration_s', 'duration_ms'];
+    if (NUMERIC_KINDS.indexOf(item.kind) !== -1) {
+      var temIntervalo = item.minimum !== null && item.minimum !== undefined &&
+        item.maximum !== null && item.maximum !== undefined;
+      var passo = item.kind === 'float' ? '0.01' : '1';
+      if (temIntervalo) {
+        // Fase 9 do redesign (Rodada 2): range com rotulo ao vivo -- unico jeito de ver o
+        // numero exato durante o arraste, entao nao e redundante com o proprio slider.
+        var range = document.createElement('input');
+        range.type = 'range';
+        range.className = 'row-control';
+        range.min = String(item.minimum);
+        range.max = String(item.maximum);
+        range.step = passo;
+        range.value = item.value;
+        var val = document.createElement('span');
+        val.className = 'range-val';
+        val.textContent = item.value;
+        range.oninput = function () { val.textContent = range.value; };
+        range.onchange = function () {
+          range.disabled = true;
+          writeSetting(ctx, item, range.value, onDone);
+        };
+        row.appendChild(range);
+        row.appendChild(val);
+      } else {
+        var num = document.createElement('input');
+        num.type = 'number';
+        num.className = 'row-control';
+        num.step = passo;
+        num.value = item.value;
+        num.onchange = function () {
+          num.disabled = true;
+          writeSetting(ctx, item, num.value, onDone);
+        };
+        row.appendChild(num);
+      }
     }
   }
 
@@ -196,10 +235,13 @@
       var r = h.el('div', 'row');
       var k = h.el('span', 'k', s.key.replace(/^(GATEKEEPER|GOVERNOR)_/, ''));
       // Fase 9 do redesign (Rodada 2): quando o proprio controle ja demonstra o valor (switch
-      // pro bool, select pro enum; range/dialog vem nas proximas tasks desta fase), o texto
-      // duplicado em `.v` some -- o span continua existindo (vazio) so pra hospedar os icones de
-      // lock/shadowed.
-      var valorRedundante = s.editable && (s.kind === 'bool' || s.kind === 'enum');
+      // pro bool, select pro enum, range com min/max pro numerico com intervalo -- o range tem
+      // rotulo ao vivo proprio, so o number puro sem intervalo mantem `.v` pra nao virar
+      // ambiguo; dialog vem na proxima task desta fase), o texto duplicado em `.v` some -- o
+      // span continua existindo (vazio) so pra hospedar os icones de lock/shadowed.
+      var valorRedundante = s.editable && (s.kind === 'bool' || s.kind === 'enum' ||
+        (['int', 'float', 'duration_s', 'duration_ms'].indexOf(s.kind) !== -1 &&
+         s.minimum !== null && s.minimum !== undefined && s.maximum !== null && s.maximum !== undefined));
       var v = h.el('span', 'v', valorRedundante ? '' : String(s.value));
       if (!s.editable) v.appendChild(h.icon('lock'));
       if (s.shadowed) { v.appendChild(h.icon('alert-triangle')); v.title = t.shadowed; }
