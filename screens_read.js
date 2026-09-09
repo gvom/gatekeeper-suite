@@ -112,24 +112,40 @@
   function attachEditor(ctx, row, item, onDone) {
     if (!item.editable) return;
     if (item.kind === 'bool') {
-      var btn = document.createElement('button');
-      btn.className = 'row-control ' + (item.value === 'true' ? 'btn-success' : 'btn-danger');
-      btn.textContent = item.value === 'true' ? 'on' : 'off';
-      btn.onclick = function () {
-        btn.disabled = true;
-        writeSetting(ctx, item, item.value === 'true' ? 'false' : 'true', onDone);
+      // Fase 9 do redesign (Rodada 2): switch nativo no lugar do botao on/off -- o proprio
+      // controle ja demonstra o estado (marcado/desmarcado), sem precisar de texto ao lado.
+      var chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.className = 'switch';
+      chk.checked = item.value === 'true';
+      chk.onchange = function () {
+        chk.disabled = true;
+        writeSetting(ctx, item, chk.checked ? 'true' : 'false', onDone);
       };
-      row.appendChild(btn);
+      row.appendChild(chk);
       return;
     }
     if (item.kind === 'enum' && Array.isArray(item.choices)) {
+      // Fase 9 do redesign (Rodada 2): <select> nativo no lugar de N botoes empilhados -- o
+      // proprio elemento ja mostra a opcao atual, sem precisar de marcador ('●') ao lado.
+      var sel = document.createElement('select');
+      sel.className = 'row-control';
       item.choices.forEach(function (choice) {
-        var b = document.createElement('button');
-        b.className = 'row-control';
-        b.textContent = choice === item.value ? '● ' + choice : choice;
-        b.onclick = function () { writeSetting(ctx, item, choice, onDone); };
-        row.appendChild(b);
+        var opt = document.createElement('option');
+        opt.value = choice; opt.textContent = choice;
+        if (choice === item.value) opt.selected = true;
+        sel.appendChild(opt);
       });
+      var valorAnterior = item.value;
+      sel.onchange = function () {
+        var escolha = sel.value;
+        sel.disabled = true;
+        writeSetting(ctx, item, escolha, function () {
+          sel.disabled = false;
+          if (onDone) onDone();
+        });
+      };
+      row.appendChild(sel);
     }
   }
 
@@ -180,7 +196,11 @@
     itens.forEach(function (s) {
       var r = h.el('div', 'row');
       var k = h.el('span', 'k', s.key.replace(/^(GATEKEEPER|GOVERNOR)_/, ''));
-      var v = h.el('span', 'v', String(s.value));
+      // Fase 9 do redesign (Rodada 2): quando o proprio controle ja demonstra o valor (switch
+      // pro bool; select/range/dialog vem nas proximas tasks desta fase), o texto duplicado em
+      // `.v` some -- o span continua existindo (vazio) so pra hospedar os icones de lock/shadowed.
+      var valorRedundante = s.editable && s.kind === 'bool';
+      var v = h.el('span', 'v', valorRedundante ? '' : String(s.value));
       if (!s.editable) v.appendChild(h.icon('lock'));
       if (s.shadowed) { v.appendChild(h.icon('alert-triangle')); v.title = t.shadowed; }
       r.appendChild(k); r.appendChild(v);

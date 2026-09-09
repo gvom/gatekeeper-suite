@@ -51,6 +51,17 @@ button:active { transform: scale(.97); }
 #tabs .tab-active { color: var(--btn); }
 #screen { padding: 8px 16px calc(64px + env(safe-area-inset-bottom)); }
 #foot { padding: 8px 16px max(16px, env(safe-area-inset-bottom)); }
+/* Fase 9 do redesign (Rodada 2): switch nativo pra config booleana -- `appearance:none` tira a
+   caixa de selecao padrao do navegador, o resto e trilho + circulo deslizante via `::before`
+   (funciona em `<input>` com `appearance:none` nos motores WebView usados pelo Telegram; sem
+   isso o checkbox nao teria pseudo-elemento algum). */
+.switch { appearance: none; -webkit-appearance: none; width: 44px; height: 24px; min-width: 44px;
+  border-radius: 999px; background: var(--border); position: relative; cursor: pointer;
+  transition: background var(--transition-fast); flex: 0 0 auto; }
+.switch:checked { background: var(--btn); }
+.switch::before { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+  border-radius: 50%; background: #ffffff; transition: transform var(--transition-fast); }
+.switch:checked::before { transform: translateX(20px); }
 button { width: 100%; padding: 12px; border: 0; border-radius: 10px;
   background: var(--btn); color: var(--btn-fg); font-size: 16px; }
 /* Fase 6 do redesign (Rodada 2): controle dentro de `.row` (toggle booleano, escolhas de enum) —
