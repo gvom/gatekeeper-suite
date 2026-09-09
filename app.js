@@ -106,7 +106,10 @@
                        { t: 'line', a: { x1: 12, y1: 16, x2: 12, y2: 16.01 } }],
     star: [{ t: 'polygon', a: { points: '12,2 15,9 22,9 16.5,13.5 18.5,21 12,17 5.5,21 7.5,13.5 2,9 9,9' } }],
     undo: [{ t: 'path', a: { d: 'M3 10h10a5 5 0 0 1 0 10h-2' } },
-           { t: 'polyline', a: { points: '7,6 3,10 7,14' } }]
+           { t: 'polyline', a: { points: '7,6 3,10 7,14' } }],
+    // Fase 8 do redesign (Rodada 2): aba Home da barra de navegacao inferior.
+    home: [{ t: 'polyline', a: { points: '4,11 12,4 20,11' } },
+           { t: 'rect', a: { x: 7, y: 11, width: 10, height: 9 } }]
   };
   function icon(name) {
     var svg = svgEl('svg', { viewBox: '0 0 24 24', width: '16', height: '16', fill: 'none',
@@ -536,7 +539,11 @@
   // telas "de navegacao" (mostram a barra de abas); `plan`/`question`/`permission` sao
   // contextuais (abertas so por um card especifico) e escondem a barra.
   var NAV_SCREENS = ['home', 'status', 'config'];
-  var TABS = ['status', 'config'];
+  var TABS = ['home', 'status', 'config'];
+  // Fase 8 do redesign (Rodada 2): icone por aba — status/config reaproveitam icones ja usados
+  // em outro contexto (shield no titulo de permission, edit em "Modificar" plano); sempre
+  // acompanhados do rotulo (iconLabel), entao a reutilizacao nao gera ambiguidade.
+  var TAB_ICONS = { home: 'home', status: 'shield', config: 'edit' };
   var currentCtx = null;
 
   function renderTabs(activeScreen) {
@@ -546,10 +553,9 @@
     clear(nav);
     nav.hidden = false;
     TABS.forEach(function (name) {
-      var btn = document.createElement('button');
+      var btn = iconLabel('button', TAB_ICONS[name] || name, L[name] || name);
       btn.type = 'button';
       btn.className = 'tab' + (name === activeScreen ? ' tab-active' : '');
-      btn.textContent = L[name] || name;
       btn.onclick = function () {
         if (name === activeScreen || !currentCtx) return;
         renderScreen({ api: currentCtx.api, who: currentCtx.who, screen: name, card: '' });
