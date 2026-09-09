@@ -140,6 +140,28 @@
     return function limpar() { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); };
   }
 
+  // Fase 10 do redesign (Rodada 2): toast proprio no lugar de tg.showAlert -- mensagem
+  // informativa (sucesso/falha/validacao) que aparece e some sozinha, sem ser a caixa de dialogo
+  // do proprio Telegram (tg.showConfirm CONTINUA nativo -- confirmacao bloqueante nao vira toast).
+  var TOAST_ICONS = { success: 'check', danger: 'x', warning: 'alert-triangle' };
+  var _toastTimer = null;
+  function showToast(msg, kind) {
+    var no = document.getElementById('toast');
+    if (!no) { no = document.createElement('div'); no.id = 'toast'; document.body.appendChild(no); }
+    clear(no);
+    // Mesma linguagem do resto do app (Regra da Cor Rara): a cor semantica mora no icone, nunca
+    // em faixa/fundo colorido do card inteiro.
+    if (TOAST_ICONS[kind]) {
+      var ic = icon(TOAST_ICONS[kind]);
+      ic.classList.add('toast-icon-' + kind);
+      no.appendChild(ic);
+    }
+    no.appendChild(document.createTextNode(msg));
+    no.hidden = false;
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(function () { no.hidden = true; }, 2500);
+  }
+
   function parseHash() {
     var out = { screen: '', card: '', api: '' };
     var raw = (location.hash || '').replace(/^#/, '');
@@ -573,7 +595,7 @@
     clear(s);
     renderTabs(ctx.screen);
     var fn = SCREENS[ctx.screen];
-    if (typeof fn === 'function') { fn(ctx, s, { el: el, clear: clear, api: api, L: L, fallback: showFallback, icon: icon, iconLabel: iconLabel, skeleton: skeleton }); }
+    if (typeof fn === 'function') { fn(ctx, s, { el: el, clear: clear, api: api, L: L, fallback: showFallback, icon: icon, iconLabel: iconLabel, skeleton: skeleton, showToast: showToast }); }
     else {
       s.appendChild(el('p', 'muted', L.preparing));
       document.getElementById('foot').hidden = false;

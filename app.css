@@ -86,6 +86,17 @@ input[type="range"].row-control { accent-color: var(--btn); }
 .gk-dialog-actions button { width: auto; flex: 1; }
 .gk-dialog-actions .cancel { background: transparent; border: 1px solid var(--border);
   color: var(--fg); }
+/* Fase 10 do redesign (Rodada 2): toast proprio no lugar de tg.showAlert -- fundo/borda neutros
+   da paleta fixa, faixa lateral colorida so quando o kind e semantico (Regra da Cor Rara: cor
+   pesa pouco, nao pinta o fundo inteiro). Fica ACIMA da barra de navegacao (Fase 8), por isso o
+   z-index maior. */
+#toast { position: fixed; left: 16px; right: 16px; bottom: calc(72px + env(safe-area-inset-bottom));
+  z-index: 20; background: var(--card); color: var(--fg); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: var(--space-3); font-size: var(--font-sm);
+  display: flex; align-items: center; gap: var(--space-2); }
+.toast-icon-success { color: var(--success); flex: 0 0 auto; }
+.toast-icon-danger { color: var(--danger); flex: 0 0 auto; }
+.toast-icon-warning { color: var(--warning); flex: 0 0 auto; }
 button { width: 100%; padding: 12px; border: 0; border-radius: 10px;
   background: var(--btn); color: var(--btn-fg); font-size: 16px; }
 /* Fase 6 do redesign (Rodada 2): controle dentro de `.row` (toggle booleano, escolhas de enum) —
