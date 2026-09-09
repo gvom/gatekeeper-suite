@@ -95,7 +95,7 @@
     var tg = window.Telegram && window.Telegram.WebApp;
     if (item.kind === 'bool') {
       var btn = document.createElement('button');
-      btn.className = item.value === 'true' ? 'btn-success' : 'btn-danger';
+      btn.className = 'row-control ' + (item.value === 'true' ? 'btn-success' : 'btn-danger');
       btn.textContent = item.value === 'true' ? 'on' : 'off';
       btn.onclick = function () {
         btn.disabled = true;
@@ -108,6 +108,7 @@
     if (item.kind === 'enum' && Array.isArray(item.choices)) {
       item.choices.forEach(function (choice) {
         var b = document.createElement('button');
+        b.className = 'row-control';
         b.textContent = choice === item.value ? '● ' + choice : choice;
         b.onclick = function () {
           setConfig(ctx, item.key, choice, false).then(function (r) {

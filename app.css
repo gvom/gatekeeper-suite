@@ -48,16 +48,26 @@ button:active { transform: scale(.97); }
 #foot { padding: 8px 16px max(16px, env(safe-area-inset-bottom)); }
 button { width: 100%; padding: 12px; border: 0; border-radius: 10px;
   background: var(--btn); color: var(--btn-fg); font-size: 16px; }
-.card { background: var(--card); border-radius: 12px; padding: 12px; margin: 8px 0; }
+/* Fase 6 do redesign (Rodada 2): controle dentro de `.row` (toggle booleano, escolhas de enum) —
+   `width:100%` da regra global forcava cada um a tentar ocupar a linha inteira mesmo dividindo
+   espaco com `.k`/`.v`. `flex:1 1 100%` cai pra propria linha quando o row quebra, sem impor
+   100% de largura enquanto ainda compartilha linha. */
+.row-control { width: auto; flex: 1 1 100%; }
+.card { background: var(--card); border-radius: 12px; padding: 12px; margin: 8px 0;
+  overflow: hidden; }
 .back-link { width: auto; background: transparent; color: var(--link); padding: 4px 0 12px;
   font-size: 14px; display: block; margin: 0; }
-.row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0;
+/* Fase 6 do redesign (Rodada 2): `.row` sem `flex-wrap` forcava .k/.v e qualquer controle
+   (botao/select/etc.) a ficarem lado a lado sem espaco pra encolher, transbordando o card. Quebra
+   de linha quando nao cabe, e `.k`/`.v` ganham `min-width:0` — sem isso um item flex recusa
+   encolher abaixo do conteudo intrinseco, mesmo com word-break. */
+.row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 6px 0;
   border-bottom: 1px solid rgba(127,127,127,.15); }
 .row:last-child { border-bottom: 0; }
-.k { color: var(--hint); }
+.k { color: var(--hint); min-width: 0; overflow-wrap: break-word; flex: 1 1 160px; }
 .k-help { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
 .help-desc { font-size: var(--font-sm); margin: -2px 0 var(--space-2); }
-.v { text-align: right; word-break: break-word; }
+.v { text-align: right; word-break: break-word; min-width: 0; flex: 0 1 auto; }
 .muted { color: var(--hint); }
 .err { color: #c0392b; }
 .state-actions { margin-top: 16px; }
