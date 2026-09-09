@@ -90,17 +90,34 @@
     if (onDone) onDone();
   }
 
+  // Fase 9 do redesign (Rodada 2): fluxo de escrita unico, reaproveitado por todo kind de
+  // controle. Antes so o branch enum tratava confirm_required (409) — bool gravava direto e uma
+  // chave critica do tipo bool falharia silenciosamente em vez de pedir confirmacao.
+  function writeSetting(ctx, item, value, onDone) {
+    var tg = window.Telegram && window.Telegram.WebApp;
+    setConfig(ctx, item.key, value, false).then(function (r) {
+      if (r.status === 409 && r.json && r.json.code === 'confirm_required') {
+        new Promise(function (res) {
+          tg.showConfirm('Chave crítica. Trocar ' + item.key + ' de ' + (r.json.current || '?') + ' para ' + value + '?', res);
+        }).then(function (ok) {
+          if (!ok) { if (onDone) onDone(); return; }
+          setConfig(ctx, item.key, value, true).then(function (r2) { handleWriteResult(ctx, r2.status, r2.json, onDone); });
+        });
+      } else {
+        handleWriteResult(ctx, r.status, r.json, onDone);
+      }
+    });
+  }
+
   function attachEditor(ctx, row, item, onDone) {
     if (!item.editable) return;
-    var tg = window.Telegram && window.Telegram.WebApp;
     if (item.kind === 'bool') {
       var btn = document.createElement('button');
       btn.className = 'row-control ' + (item.value === 'true' ? 'btn-success' : 'btn-danger');
       btn.textContent = item.value === 'true' ? 'on' : 'off';
       btn.onclick = function () {
         btn.disabled = true;
-        setConfig(ctx, item.key, item.value === 'true' ? 'false' : 'true', false)
-          .then(function (r) { handleWriteResult(ctx, r.status, r.json, onDone); });
+        writeSetting(ctx, item, item.value === 'true' ? 'false' : 'true', onDone);
       };
       row.appendChild(btn);
       return;
@@ -110,20 +127,7 @@
         var b = document.createElement('button');
         b.className = 'row-control';
         b.textContent = choice === item.value ? '● ' + choice : choice;
-        b.onclick = function () {
-          setConfig(ctx, item.key, choice, false).then(function (r) {
-            if (r.status === 409 && r.json && r.json.code === 'confirm_required') {
-              new Promise(function (res) {
-                tg.showConfirm('Chave crítica. Trocar ' + item.key + ' de ' + (r.json.current || '?') + ' para ' + choice + '?', res);
-              }).then(function (ok) {
-                if (!ok) return;
-                setConfig(ctx, item.key, choice, true).then(function (r2) { handleWriteResult(ctx, r2.status, r2.json, onDone); });
-              });
-            } else {
-              handleWriteResult(ctx, r.status, r.json, onDone);
-            }
-          });
-        };
+        b.onclick = function () { writeSetting(ctx, item, choice, onDone); };
         row.appendChild(b);
       });
     }
