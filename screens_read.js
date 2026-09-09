@@ -79,15 +79,19 @@
     return apiRaw(ctx, 'POST', 'config/' + encodeURIComponent(key), body);
   }
 
-  function handleWriteResult(ctx, status, json, onDone) {
+  function handleWriteResult(ctx, status, json, onDone, h) {
     var tg = window.Telegram && window.Telegram.WebApp;
     var t = T[pickLang(tg)];
     var msg = (json && json.detail) ? json.detail : ('HTTP ' + status);
     if (status === 200 && json && json.ok && json.needs_restart) {
       new Promise(function (res) { tg.showConfirm(msg + '\n' + t.restartQ, res); })
         .then(function (ok) { if (ok) apiRaw(ctx, 'POST', 'daemon/restart', {}); });
+    } else if (h && h.showToast) {
+      // Fase 10 do redesign (Rodada 2): toast proprio no lugar de tg.showAlert -- sucesso e
+      // falha de escrita de config nao devem parecer o Telegram falando com o dono.
+      h.showToast(msg, json && json.ok ? 'success' : 'danger');
     } else if (tg) {
-      tg.showAlert(msg);
+      tg.showAlert(msg);  // rede de seguranca: chamador que nao propagou `h` ainda funciona.
     }
     if (onDone) onDone();
   }
@@ -95,7 +99,7 @@
   // Fase 9 do redesign (Rodada 2): fluxo de escrita unico, reaproveitado por todo kind de
   // controle. Antes so o branch enum tratava confirm_required (409) — bool gravava direto e uma
   // chave critica do tipo bool falharia silenciosamente em vez de pedir confirmacao.
-  function writeSetting(ctx, item, value, onDone) {
+  function writeSetting(ctx, item, value, onDone, h) {
     var tg = window.Telegram && window.Telegram.WebApp;
     setConfig(ctx, item.key, value, false).then(function (r) {
       if (r.status === 409 && r.json && r.json.code === 'confirm_required') {
@@ -103,15 +107,15 @@
           tg.showConfirm('Chave crítica. Trocar ' + item.key + ' de ' + (r.json.current || '?') + ' para ' + value + '?', res);
         }).then(function (ok) {
           if (!ok) { if (onDone) onDone(); return; }
-          setConfig(ctx, item.key, value, true).then(function (r2) { handleWriteResult(ctx, r2.status, r2.json, onDone); });
+          setConfig(ctx, item.key, value, true).then(function (r2) { handleWriteResult(ctx, r2.status, r2.json, onDone, h); });
         });
       } else {
-        handleWriteResult(ctx, r.status, r.json, onDone);
+        handleWriteResult(ctx, r.status, r.json, onDone, h);
       }
     });
   }
 
-  function attachEditor(ctx, row, item, onDone, t) {
+  function attachEditor(ctx, row, item, onDone, t, h) {
     if (!item.editable) return;
     if (item.kind === 'bool') {
       // Fase 9 do redesign (Rodada 2): switch nativo no lugar do botao on/off -- o proprio
@@ -122,7 +126,7 @@
       chk.checked = item.value === 'true';
       chk.onchange = function () {
         chk.disabled = true;
-        writeSetting(ctx, item, chk.checked ? 'true' : 'false', onDone);
+        writeSetting(ctx, item, chk.checked ? 'true' : 'false', onDone, h);
       };
       row.appendChild(chk);
       return;
@@ -144,7 +148,7 @@
         writeSetting(ctx, item, escolha, function () {
           sel.disabled = false;
           if (onDone) onDone();
-        });
+        }, h);
       };
       row.appendChild(sel);
       return;
@@ -170,7 +174,7 @@
         range.oninput = function () { val.textContent = range.value; };
         range.onchange = function () {
           range.disabled = true;
-          writeSetting(ctx, item, range.value, onDone);
+          writeSetting(ctx, item, range.value, onDone, h);
         };
         row.appendChild(range);
         row.appendChild(val);
@@ -182,7 +186,7 @@
         num.value = item.value;
         num.onchange = function () {
           num.disabled = true;
-          writeSetting(ctx, item, num.value, onDone);
+          writeSetting(ctx, item, num.value, onDone, h);
         };
         row.appendChild(num);
       }
@@ -216,7 +220,7 @@
         salvar.textContent = t.save;
         salvar.onclick = function () {
           dlg.close();
-          writeSetting(ctx, item, inp.value, onDone);
+          writeSetting(ctx, item, inp.value, onDone, h);
         };
         acoes.appendChild(cancelar);
         acoes.appendChild(salvar);
@@ -266,7 +270,7 @@
       var undo = h.iconLabel('button', 'undo', t.undo);
       undo.onclick = function () {
         apiRaw(ctx, 'POST', 'config/undo', { index: 0 }).then(function (r) {
-          handleWriteResult(ctx, r.status, r.json, onDone);
+          handleWriteResult(ctx, r.status, r.json, onDone, h);
         });
       };
       root.appendChild(undo);
@@ -292,7 +296,7 @@
       if (!s.editable) v.appendChild(h.icon('lock'));
       if (s.shadowed) { v.appendChild(h.icon('alert-triangle')); v.title = t.shadowed; }
       r.appendChild(k); r.appendChild(v);
-      attachEditor(ctx, r, s, onDone, t);
+      attachEditor(ctx, r, s, onDone, t, h);
       card.appendChild(r);
       // Fase 4 do redesign: ajuda tocavel no lugar do `title` — um tooltip HTML nativo so abre
       // com hover, invisivel em touchscreen. A chave vira um disclosure: toca, mostra o texto

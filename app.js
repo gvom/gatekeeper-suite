@@ -308,7 +308,7 @@
           feedback.placeholder = L.planFeedback;
           feedback.maxLength = 4000;
           var send = function (value) {
-            if (value === 'modify' && !feedback.value.trim()) { tg.showAlert(L.planWriteWhat); return; }
+            if (value === 'modify' && !feedback.value.trim()) { showToast(L.planWriteWhat, 'warning'); return; }
             new Promise(function (res) { tg.showConfirm(L.planConfirm + ' ' + value + '?', res); })
               .then(function (ok) {
                 if (!ok) return;
@@ -317,8 +317,8 @@
                   .then(function () { tg.HapticFeedback.notificationOccurred('success'); tg.close(); })
                   .catch(function (erro) {
                     var status = String((erro && erro.message) || '').replace('http_', '');
-                    if (status === '409') tg.showAlert(L.planAlreadyChat);
-                    else tg.showAlert(L.qSendFail + status + ').');
+                    if (status === '409') showToast(L.planAlreadyChat, 'danger');
+                    else showToast(L.qSendFail + status + ').', 'danger');
                   });
               });
           };
@@ -406,7 +406,7 @@
           if (!marcados.length) ok = false;
           answers[String(qi)] = marcados;
         });
-        if (!ok) { tg.showAlert(L.qAnswerAll); return; }
+        if (!ok) { showToast(L.qAnswerAll, 'warning'); return; }
         mb.showProgress();
         h.api(ctx, 'POST', 'cards-answer/' + encodeURIComponent(cardId), { answers: answers })
           .then(function () {
@@ -417,8 +417,8 @@
           .catch(function (erro) {
             mb.hideProgress();
             var status = String((erro && erro.message) || '').replace('http_', '');
-            if (status === '409') tg.showAlert(L.qAlreadyChat);
-            else tg.showAlert(L.qSendFail + status + ').');
+            if (status === '409') showToast(L.qAlreadyChat, 'danger');
+            else showToast(L.qSendFail + status + ').', 'danger');
           });
       });
     }).catch(function () { limpar(); root.appendChild(h.el('p', 'err', L.qUnavailable)); });
@@ -457,8 +457,8 @@
                 .then(function () { tg.HapticFeedback.notificationOccurred('success'); tg.close(); })
                 .catch(function (erro) {
                   var status = String((erro && erro.message) || '').replace('http_', '');
-                  if (status === '409') tg.showAlert(L.permAlreadyChat);
-                  else tg.showAlert(L.qSendFail + status + ').');
+                  if (status === '409') showToast(L.permAlreadyChat, 'danger');
+                  else showToast(L.qSendFail + status + ').', 'danger');
                 });
             });
         };
@@ -511,7 +511,7 @@
             var p2 = json2.payload || {};
             refreshEstado(p2.auto, p2.floor);
           })
-          .catch(function () { tg.showAlert(L.permStateFail); refreshEstado(estado.auto, estado.floor); })
+          .catch(function () { showToast(L.permStateFail, 'danger'); refreshEstado(estado.auto, estado.floor); })
           .then(function () { setBusy(false); });
       }
       autoBtn.onclick = function () { sendState(estado.auto ? 'C' : 'A'); };
