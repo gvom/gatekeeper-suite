@@ -527,8 +527,8 @@
   };
 
   // Fase 1 do redesign (plano pos-Arco-C): tela inicial quando a Mini App abre sem `#screen`
-  // (Menu Button do Telegram). Mostra um resumo do status e, se houver, um atalho para retomar
-  // uma decisao em aberto no Decision Inbox (GET pending — leitura, nunca decide nada). Duas
+  // (Menu Button do Telegram). Mostra um resumo do status e, se houver, atalhos para retomar
+  // decisoes em aberto no Decision Inbox (GET pending — leitura, nunca decide nada). Duas
   // buscas independentes (status/pending); o esqueleto some quando as duas terminarem, sucesso ou
   // falha — nenhuma delas sozinha decide o estado de carregamento da tela toda.
   SCREENS.home = function (ctx, root, h) {
@@ -540,20 +540,24 @@
       root.appendChild(h.el('p', 'muted', s.state || '?'));
       tick();
     }).catch(function () { tick(); /* resumo e so um extra; a Home continua util sem ele */ });
+    // Fase 11 do redesign (Rodada 2): lista TODAS as decisoes pendentes, nao so a mais recente --
+    // `pending()` devolve `cards` (lista completa), um box por item, cada um levando pro card
+    // certo.
     h.api(ctx, 'GET', 'pending').then(function (resp) {
-      var card = resp && resp.card;
+      var cards = (resp && resp.cards) || [];
       tick();
-      if (!card) return;
-      var box = document.createElement('div');
-      box.className = 'card';
-      box.appendChild(h.el('p', null, L.homePending));
-      var btn = document.createElement('button');
-      btn.textContent = L.homeResume + ' — ' + (L[card.kind] || card.kind);
-      btn.onclick = function () {
-        renderScreen({ api: ctx.api, who: ctx.who, screen: card.kind, card: card.id });
-      };
-      box.appendChild(btn);
-      root.appendChild(box);
+      cards.forEach(function (card) {
+        var box = document.createElement('div');
+        box.className = 'card';
+        box.appendChild(h.el('p', null, L.homePending));
+        var btn = document.createElement('button');
+        btn.textContent = L.homeResume + ' — ' + (L[card.kind] || card.kind);
+        btn.onclick = function () {
+          renderScreen({ api: ctx.api, who: ctx.who, screen: card.kind, card: card.id });
+        };
+        box.appendChild(btn);
+        root.appendChild(box);
+      });
     }).catch(function () { tick(); /* sem pendencia detectavel: Home segue normal */ });
   };
 
