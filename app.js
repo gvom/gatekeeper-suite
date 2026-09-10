@@ -31,7 +31,8 @@
           permAutoOn: 'Ativar automático', permAutoOff: 'Desligar automático',
           permFloorUp: 'Subir piso', permFloorDown: 'Descer piso', permFloorNow: 'Piso atual: ',
           permApplying: 'Aplicando…',
-          permStateFail: 'Não foi possível aplicar agora — tente de novo.', retry: 'Tentar de novo' },
+          permStateFail: 'Não foi possível aplicar agora — tente de novo.', retry: 'Tentar de novo',
+          permFeedback: 'Anotação (opcional)' },
     en: { connecting: 'Connecting…', offline: 'Backend unavailable — answer in chat.',
           close: 'Close', badApi: 'Invalid API address.', notTelegram: 'Open from Telegram.',
           home: 'Home', preparing: 'Screen in preparation — use chat.',
@@ -53,7 +54,8 @@
           permAutoOn: 'Turn autonomous on', permAutoOff: 'Turn autonomous off',
           permFloorUp: 'Raise floor', permFloorDown: 'Lower floor', permFloorNow: 'Current floor: ',
           permApplying: 'Applying…',
-          permStateFail: 'Could not apply now — try again.', retry: 'Try again' }
+          permStateFail: 'Could not apply now — try again.', retry: 'Try again',
+          permFeedback: 'Note (optional)' }
   };
 
   function lang() {
@@ -441,6 +443,12 @@
       root.appendChild(h.el('p', 'meta', L.permTool + payload.tool + L.permTier + payload.tier));
       root.appendChild(h.el('p', null, L.permReason + (payload.reason || '')));
       root.appendChild(h.el('pre', null, payload.text || ''));
+      // Fase 12 do redesign (Rodada 2): anotacao de texto livre opcional, mesmo padrao do
+      // feedback de plan -- nunca obrigatoria, acompanha a decisao seja qual for o codigo.
+      var feedback = document.createElement('textarea');
+      feedback.placeholder = L.permFeedback;
+      feedback.maxLength = 4000;
+      root.appendChild(feedback);
       var bar = document.createElement('div');
       bar.className = 'actions';
       var labels = { a: L.permAllow, d: L.permDeny, l: L.permLocal };
@@ -453,7 +461,8 @@
           new Promise(function (res) { tg.showConfirm(L.planConfirm + ' ' + (labels[code] || code) + '?', res); })
             .then(function (ok) {
               if (!ok) return;
-              h.api(ctx, 'POST', 'cards-answer/' + encodeURIComponent(cardId), { decision: code })
+              h.api(ctx, 'POST', 'cards-answer/' + encodeURIComponent(cardId),
+                    { decision: code, feedback: feedback.value })
                 .then(function () { tg.HapticFeedback.notificationOccurred('success'); tg.close(); })
                 .catch(function (erro) {
                   var status = String((erro && erro.message) || '').replace('http_', '');

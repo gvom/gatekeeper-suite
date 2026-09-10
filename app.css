@@ -69,6 +69,12 @@ select.row-control, input[type="number"].row-control { background: var(--card); 
   border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 16px; }
 input[type="range"].row-control { accent-color: var(--btn); }
 .range-val { flex: 1 1 100%; text-align: right; color: var(--hint); font-size: var(--font-sm); }
+/* Fase 12 do redesign (Rodada 2): <textarea> (feedback de plan, anotacao de permission) nao
+   tinha NENHUM estilo proprio desde que existe -- so ficou visivel agora que a paleta e fixa
+   (Fase 7); antes o branco padrao do navegador coincidia por acaso com o tema claro do Telegram. */
+textarea { width: 100%; background: var(--bg); color: var(--fg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 8px 12px; font-size: 16px; font-family: inherit;
+  margin: 8px 0; }
 /* Fase 9 do redesign (Rodada 2): chip que abre um <dialog> nativo pra editar texto/caminho --
    resolve o overflow de caber um input na linha apertada do row, e o proprio chip demonstra o
    valor atual (trunca com reticencias quando comprido). */
