@@ -12,7 +12,7 @@
           shadowed: 'valor vindo do ambiente do processo; gravar não teria efeito', none: 'nenhum',
           undo: 'Desfazer última', restartQ: 'Reiniciar o daemon agora?',
           save: 'Salvar', cancel: 'Cancelar', emptyValue: '(vazio)',
-          activeSessions: 'Sessões ativas' },
+          activeSessions: 'Sessões ativas', edit: 'Editar' },
     en: { state: 'State', session: 'Session', inflight: 'Tools in flight', subagents: 'Subagents',
           indicative: 'indicative', goal: 'Goal', phase: 'Phase', open: 'Open phases',
           waiting: 'Waiting', activity: 'Last activity', notes: 'Notes', failures: 'Failures',
@@ -20,12 +20,20 @@
           shadowed: 'value comes from the process environment; writing would have no effect', none: 'none',
           undo: 'Undo last', restartQ: 'Restart the daemon now?',
           save: 'Save', cancel: 'Cancel', emptyValue: '(empty)',
-          activeSessions: 'Active sessions' }
+          activeSessions: 'Active sessions', edit: 'Edit' }
   };
 
   function row(h, k, v) {
     var r = h.el('div', 'row'); r.appendChild(h.el('span', 'k', k)); r.appendChild(h.el('span', 'v', v)); return r;
   }
+
+  // Fase 13 do redesign (Rodada 3): card de config nasce travado; "Editar" destrava, "Salvar"
+  // re-trava -- so a interacao, cada campo continua salvando sozinho ao mudar (decisao do dono).
+  // Precisa sobreviver ao reload completo que `onDone` dispara apos CADA escrita (S.config inteiro
+  // se reconstroi) -- sem isto, editar um campo já re-travaria o card antes do dono editar o
+  // proximo. Estado no escopo do modulo, chaveado por um id estavel de card (essentials, ou
+  // "categoria/grupo"); sobrevive a re-renderizacoes de S.config, reseta so ao recarregar a pagina.
+  var cardEditState = {};
 
   function pickLang(tg) {
     var code = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code) || 'en';
@@ -143,12 +151,13 @@
       chk.type = 'checkbox';
       chk.className = 'switch';
       chk.checked = item.value === 'true';
+      chk.disabled = true;  // Fase 13 do redesign (Rodada 3): card nasce travado.
       chk.onchange = function () {
         chk.disabled = true;
         writeSetting(ctx, item, chk.checked ? 'true' : 'false', onDone, h);
       };
       row.appendChild(chk);
-      return;
+      return chk;
     }
     if (item.kind === 'enum' && Array.isArray(item.choices)) {
       // Fase 9 do redesign (Rodada 2): <select> nativo no lugar de N botoes empilhados -- o
@@ -161,6 +170,7 @@
         if (choice === item.value) opt.selected = true;
         sel.appendChild(opt);
       });
+      sel.disabled = true;  // Fase 13 do redesign (Rodada 3): card nasce travado.
       sel.onchange = function () {
         var escolha = sel.value;
         sel.disabled = true;
@@ -170,7 +180,7 @@
         }, h);
       };
       row.appendChild(sel);
-      return;
+      return sel;
     }
     var NUMERIC_KINDS = ['int', 'float', 'duration_s', 'duration_ms'];
     if (NUMERIC_KINDS.indexOf(item.kind) !== -1) {
@@ -190,6 +200,7 @@
         var val = document.createElement('span');
         val.className = 'range-val';
         val.textContent = item.value;
+        range.disabled = true;  // Fase 13 do redesign (Rodada 3): card nasce travado.
         range.oninput = function () { val.textContent = range.value; };
         range.onchange = function () {
           range.disabled = true;
@@ -197,19 +208,21 @@
         };
         row.appendChild(range);
         row.appendChild(val);
+        return range;
       } else {
         var num = document.createElement('input');
         num.type = 'number';
         num.className = 'row-control';
         num.step = passo;
         num.value = item.value;
+        num.disabled = true;  // Fase 13 do redesign (Rodada 3): card nasce travado.
         num.onchange = function () {
           num.disabled = true;
           writeSetting(ctx, item, num.value, onDone, h);
         };
         row.appendChild(num);
+        return num;
       }
-      return;
     }
     if (item.kind === 'text' || item.kind === 'path') {
       // Fase 9 do redesign (Rodada 2): chip que abre um <dialog> nativo pra editar -- resolve o
@@ -219,6 +232,7 @@
       chip.type = 'button';
       chip.className = 'row-control chip';
       chip.textContent = item.value || t.emptyValue;
+      chip.disabled = true;  // Fase 13 do redesign (Rodada 3): card nasce travado.
       chip.onclick = function () {
         var dlg = document.createElement('dialog');
         dlg.className = 'gk-dialog';
@@ -251,6 +265,7 @@
         dlg.showModal();
       };
       row.appendChild(chip);
+      return chip;
     }
   }
 
@@ -268,7 +283,7 @@
       (resp.settings || []).forEach(function (s) { porChave[s.key] = s; });
       // Essenciais primeiro (mesma curadoria do chat).
       var ess = (resp.essentials || []).map(function (k) { return porChave[k]; }).filter(Boolean);
-      if (ess.length) { root.appendChild(h.iconLabel('h2', 'star', t.essentials)); root.appendChild(lista(ctx, ess, t, h, onDone)); }
+      if (ess.length) { root.appendChild(h.iconLabel('h2', 'star', t.essentials)); root.appendChild(lista(ctx, ess, t, h, onDone, 'essentials')); }
       // Depois por categoria › grupo, na ordem do registry.
       // Fase 4 do redesign: `<details>`/`<summary>` — abre/fecha sozinho, sem JS de toggle,
       // acessivel e funciona com toque. Nao precisa de CDN nem string de HTML: o navegador ja
@@ -283,7 +298,7 @@
         var grupos = {};
         var ordem = [];
         itens.forEach(function (s) { var g = s.groupLabel || ''; if (!(g in grupos)) { grupos[g] = []; ordem.push(g); } grupos[g].push(s); });
-        ordem.forEach(function (g) { if (g) det.appendChild(h.el('p', 'muted', g)); det.appendChild(lista(ctx, grupos[g], t, h, onDone)); });
+        ordem.forEach(function (g) { if (g) det.appendChild(h.el('p', 'muted', g)); det.appendChild(lista(ctx, grupos[g], t, h, onDone, cat + '/' + g)); });
         root.appendChild(det);
       });
       var undo = h.iconLabel('button', 'undo', t.undo);
@@ -296,8 +311,9 @@
     }).catch(function () { limpar(); h.fallback(undefined, function () { S.config(ctx, root, h); }); });
   };
 
-  function lista(ctx, itens, t, h, onDone) {
+  function lista(ctx, itens, t, h, onDone, cardId) {
     var card = h.el('div', 'card');
+    var controles = [];
     itens.forEach(function (s) {
       var r = h.el('div', 'row');
       var k = h.el('span', 'k', s.key.replace(/^(GATEKEEPER|GOVERNOR)_/, ''));
@@ -315,7 +331,8 @@
       if (!s.editable) v.appendChild(h.icon('lock'));
       if (s.shadowed) { v.appendChild(h.icon('alert-triangle')); v.title = t.shadowed; }
       r.appendChild(k); r.appendChild(v);
-      attachEditor(ctx, r, s, onDone, t, h);
+      var controle = attachEditor(ctx, r, s, onDone, t, h);
+      if (controle) controles.push(controle);
       card.appendChild(r);
       // Fase 4 do redesign: ajuda tocavel no lugar do `title` — um tooltip HTML nativo so abre
       // com hover, invisivel em touchscreen. A chave vira um disclosure: toca, mostra o texto
@@ -331,6 +348,28 @@
         card.appendChild(desc);
       }
     });
+    // Fase 13 do redesign (Rodada 3): cabecalho com Editar/Salvar -- so quando o card tem pelo
+    // menos um controle editavel (card 100% travado pelo ambiente nao ganha o botao). Estado
+    // (destravado ou nao) mora em `cardEditState`, sobrevive ao reload completo que `onDone`
+    // dispara apos cada escrita.
+    if (controles.length) {
+      var destravado = !!cardEditState[cardId];
+      controles.forEach(function (c) { c.disabled = !destravado; });
+      var head = document.createElement('div');
+      head.className = 'card-head';
+      var toggle = h.iconLabel('button', destravado ? 'check' : 'edit', destravado ? t.save : t.edit);
+      toggle.className = 'edit-toggle';
+      toggle.onclick = function () {
+        destravado = !destravado;
+        cardEditState[cardId] = destravado;
+        controles.forEach(function (c) { c.disabled = !destravado; });
+        h.clear(toggle);
+        toggle.appendChild(h.icon(destravado ? 'check' : 'edit'));
+        toggle.appendChild(document.createTextNode(' ' + (destravado ? t.save : t.edit)));
+      };
+      head.appendChild(toggle);
+      card.insertBefore(head, card.firstChild);
+    }
     return card;
   }
 })();
