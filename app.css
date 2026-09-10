@@ -68,14 +68,26 @@ button:active { transform: scale(.97); }
 .switch:disabled:checked { background: var(--border); }
 /* Fase 9 do redesign (Rodada 2): select/number/range nativos nao herdam nada da regra global de
    `button` (so se aplica a `<button>`) -- sem isto renderizariam com o cromo padrao do navegador
-   (fundo branco), destoando da paleta fixa escura da Fase 7. */
-select.row-control, input[type="number"].row-control { background: var(--card); color: var(--fg);
+   (fundo branco), destoando da paleta fixa escura da Fase 7. Fase 14 (Rodada 3): number/range
+   selecionados por tag+type direto (nao mais por `.row-control`) -- moraram pro `.stepper-wrap`
+   junto dos botoes -/+, `.row-control` ficou so no wrapper. */
+select.row-control { background: var(--card); color: var(--fg);
   border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 16px; }
-input[type="range"].row-control { accent-color: var(--btn); }
-input[type="range"].row-control:disabled { accent-color: var(--hint); opacity: .6; }
-select.row-control:disabled, input[type="number"].row-control:disabled,
-.chip:disabled { opacity: .55; }
+select.row-control:disabled, .chip:disabled { opacity: .55; }
 .range-val { flex: 1 1 100%; text-align: right; color: var(--hint); font-size: var(--font-sm); }
+/* Fase 14 do redesign (Rodada 3): stepper -/+ ao lado de number/range -- o wrapper carrega o
+   `row-control` (cai pra propria linha quando o `.row` externo quebra), os filhos so precisam
+   dividir espaco entre si (sem wrap interno: os botoes ficam de tamanho fixo, o input cresce). */
+.stepper-wrap { display: flex; align-items: center; gap: var(--space-2); }
+.stepper-btn { width: 36px; min-width: 36px; flex: 0 0 auto; padding: 6px; font-size: 18px;
+  line-height: 1; }
+.stepper-wrap input[type="number"], .stepper-wrap input[type="range"] {
+  flex: 1 1 auto; min-width: 0; width: auto; }
+input[type="number"] { background: var(--card); color: var(--fg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 12px; font-size: 16px; }
+input[type="number"]:disabled { opacity: .55; }
+input[type="range"] { accent-color: var(--btn); }
+input[type="range"]:disabled { accent-color: var(--hint); opacity: .6; }
 /* Fase 12 do redesign (Rodada 2): <textarea> (feedback de plan, anotacao de permission) nao
    tinha NENHUM estilo proprio desde que existe -- so ficou visivel agora que a paleta e fixa
    (Fase 7); antes o branco padrao do navegador coincidia por acaso com o tema claro do Telegram. */

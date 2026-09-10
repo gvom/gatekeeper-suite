@@ -12,7 +12,8 @@
           shadowed: 'valor vindo do ambiente do processo; gravar não teria efeito', none: 'nenhum',
           undo: 'Desfazer última', restartQ: 'Reiniciar o daemon agora?',
           save: 'Salvar', cancel: 'Cancelar', emptyValue: '(vazio)',
-          activeSessions: 'Sessões ativas', edit: 'Editar' },
+          activeSessions: 'Sessões ativas', edit: 'Editar',
+          decrease: 'Diminuir', increase: 'Aumentar' },
     en: { state: 'State', session: 'Session', inflight: 'Tools in flight', subagents: 'Subagents',
           indicative: 'indicative', goal: 'Goal', phase: 'Phase', open: 'Open phases',
           waiting: 'Waiting', activity: 'Last activity', notes: 'Notes', failures: 'Failures',
@@ -20,7 +21,8 @@
           shadowed: 'value comes from the process environment; writing would have no effect', none: 'none',
           undo: 'Undo last', restartQ: 'Restart the daemon now?',
           save: 'Save', cancel: 'Cancel', emptyValue: '(empty)',
-          activeSessions: 'Active sessions', edit: 'Edit' }
+          activeSessions: 'Active sessions', edit: 'Edit',
+          decrease: 'Decrease', increase: 'Increase' }
   };
 
   function row(h, k, v) {
@@ -194,12 +196,27 @@
       var temIntervalo = item.minimum !== null && item.minimum !== undefined &&
         item.maximum !== null && item.maximum !== undefined;
       var passo = item.kind === 'float' ? '0.01' : '1';
+      // Fase 14 do redesign (Rodada 3): stepper -/+ reaproveita o mesmo incremento que o chat ja
+      // usa (steps_for() no backend, exposto via item.steps) -- o menor passo declarado/derivado,
+      // digitacao direta continua disponivel pro ajuste fino que o botao nao cobre.
+      var incremento = (item.steps && item.steps.length) ? item.steps[0] :
+        (item.kind === 'float' ? 0.01 : 1);
+      // Fase 14 do redesign (Rodada 3): botoes -/+ e o input ficam juntos num wrapper proprio
+      // (`.stepper-wrap`, carrega o `row-control` que antes ia direto no input) -- sem isso o
+      // `.row` externo podia separar os botoes do input em linhas diferentes ao quebrar.
+      var wrap = document.createElement('div');
+      wrap.className = 'stepper-wrap row-control';
+      var menos = document.createElement('button');
+      menos.type = 'button'; menos.className = 'stepper-btn';
+      menos.textContent = '−'; menos.setAttribute('aria-label', t.decrease);
+      var mais = document.createElement('button');
+      mais.type = 'button'; mais.className = 'stepper-btn';
+      mais.textContent = '+'; mais.setAttribute('aria-label', t.increase);
       if (temIntervalo) {
         // Fase 9 do redesign (Rodada 2): range com rotulo ao vivo -- unico jeito de ver o
         // numero exato durante o arraste, entao nao e redundante com o proprio slider.
         var range = document.createElement('input');
         range.type = 'range';
-        range.className = 'row-control';
         range.min = String(item.minimum);
         range.max = String(item.maximum);
         range.step = passo;
@@ -213,13 +230,31 @@
           range.disabled = true;
           writeSetting(ctx, item, range.value, onDone, h);
         };
-        row.appendChild(range);
+        var atualizaLimites = function () {
+          var atual = parseFloat(range.value);
+          menos.disabled = range.disabled || atual <= item.minimum;
+          mais.disabled = range.disabled || atual >= item.maximum;
+        };
+        menos.onclick = function () {
+          var novo = Math.max(item.minimum, parseFloat(range.value) - incremento);
+          range.value = novo; val.textContent = String(novo);
+          range.disabled = true; atualizaLimites();
+          writeSetting(ctx, item, String(novo), onDone, h);
+        };
+        mais.onclick = function () {
+          var novo = Math.min(item.maximum, parseFloat(range.value) + incremento);
+          range.value = novo; val.textContent = String(novo);
+          range.disabled = true; atualizaLimites();
+          writeSetting(ctx, item, String(novo), onDone, h);
+        };
+        atualizaLimites();
+        wrap.appendChild(menos); wrap.appendChild(range); wrap.appendChild(mais);
+        row.appendChild(wrap);
         row.appendChild(val);
-        return range;
+        return [menos, range, mais];
       } else {
         var num = document.createElement('input');
         num.type = 'number';
-        num.className = 'row-control';
         num.step = passo;
         num.value = item.value;
         num.disabled = true;  // Fase 13 do redesign (Rodada 3): card nasce travado.
@@ -227,8 +262,21 @@
           num.disabled = true;
           writeSetting(ctx, item, num.value, onDone, h);
         };
-        row.appendChild(num);
-        return num;
+        menos.onclick = function () {
+          var novo = (parseFloat(num.value) || 0) - incremento;
+          num.value = novo;
+          num.disabled = true;
+          writeSetting(ctx, item, String(novo), onDone, h);
+        };
+        mais.onclick = function () {
+          var novo = (parseFloat(num.value) || 0) + incremento;
+          num.value = novo;
+          num.disabled = true;
+          writeSetting(ctx, item, String(novo), onDone, h);
+        };
+        wrap.appendChild(menos); wrap.appendChild(num); wrap.appendChild(mais);
+        row.appendChild(wrap);
+        return [menos, num, mais];
       }
     }
     if (item.kind === 'text' || item.kind === 'path') {
@@ -356,7 +404,10 @@
       if (s.shadowed) { v.appendChild(h.icon('alert-triangle')); v.title = t.shadowed; }
       r.appendChild(k); r.appendChild(v);
       var controle = attachEditor(ctx, r, s, onDone, t, h);
-      if (controle) controles.push(controle);
+      // Fase 14 do redesign (Rodada 3): attachEditor() pode devolver mais de um controle (range
+      // com botoes -/+ ao lado) -- os dois formatos (elemento unico ou array) sao aceitos aqui.
+      if (Array.isArray(controle)) { controles = controles.concat(controle); }
+      else if (controle) { controles.push(controle); }
       body.appendChild(r);
       // Fase 4 do redesign: ajuda tocavel no lugar do `title` — um tooltip HTML nativo so abre
       // com hover, invisivel em touchscreen. A chave vira um disclosure: toca, mostra o texto
