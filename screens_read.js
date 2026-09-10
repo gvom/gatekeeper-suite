@@ -120,7 +120,13 @@
     } else if (tg) {
       tg.showAlert(msg);  // rede de seguranca: chamador que nao propagou `h` ainda funciona.
     }
-    if (onDone) onDone();
+    // Achado no gate da Fase 13 (Rodada 3), pre-existente desde a Fase 9: no Telegram Android, a
+    // Mini App as vezes fecha sozinha ao editar QUALQUER campo. `onDone` reconstroi a tela inteira
+    // (h.clear(root) + rebuild) -- se isso acontece ainda dentro do mesmo ciclo do gesto de toque
+    // que disparou a escrita, o WebView do Android pode interpretar a destruicao abrupta do
+    // elemento tocado como um swipe de fechar. `setTimeout(.., 0)` adia a reconstrucao pro
+    // proximo ciclo do event loop, deixando o gesto atual assentar antes do DOM ser substituido.
+    if (onDone) setTimeout(onDone, 0);
   }
 
   // Fase 9 do redesign (Rodada 2): fluxo de escrita unico, reaproveitado por todo kind de
@@ -313,6 +319,11 @@
 
   function lista(ctx, itens, t, h, onDone, cardId) {
     var card = h.el('div', 'card');
+    // Fase 13 do redesign (Rodada 3): linhas vao pra um wrapper `.card-body` em vez de direto no
+    // `.card` -- a camada de bloqueio (overlay com desfoque) cobre so o body, nunca o cabecalho
+    // com o botao Editar/Salvar.
+    var body = document.createElement('div');
+    body.className = 'card-body';
     var controles = [];
     itens.forEach(function (s) {
       var r = h.el('div', 'row');
@@ -333,7 +344,7 @@
       r.appendChild(k); r.appendChild(v);
       var controle = attachEditor(ctx, r, s, onDone, t, h);
       if (controle) controles.push(controle);
-      card.appendChild(r);
+      body.appendChild(r);
       // Fase 4 do redesign: ajuda tocavel no lugar do `title` — um tooltip HTML nativo so abre
       // com hover, invisivel em touchscreen. A chave vira um disclosure: toca, mostra o texto
       // logo abaixo da linha; toca de novo, esconde.
@@ -345,16 +356,23 @@
         k.setAttribute('role', 'button');
         k.setAttribute('tabindex', '0');
         k.onclick = function () { desc.hidden = !desc.hidden; };
-        card.appendChild(desc);
+        body.appendChild(desc);
       }
     });
+    card.appendChild(body);
     // Fase 13 do redesign (Rodada 3): cabecalho com Editar/Salvar -- so quando o card tem pelo
     // menos um controle editavel (card 100% travado pelo ambiente nao ganha o botao). Estado
     // (destravado ou nao) mora em `cardEditState`, sobrevive ao reload completo que `onDone`
-    // dispara apos cada escrita.
+    // dispara apos cada escrita. Camada de bloqueio (leve desfoque) cobre so o `.card-body`,
+    // nunca o cabecalho -- da pra ler as configuracoes atras dela, so nao interagir (a trava real
+    // e o `disabled` dos controles; a camada e so o sinal visual).
     if (controles.length) {
       var destravado = !!cardEditState[cardId];
       controles.forEach(function (c) { c.disabled = !destravado; });
+      var overlay = document.createElement('div');
+      overlay.className = 'card-lock-overlay';
+      overlay.hidden = destravado;
+      body.appendChild(overlay);
       var head = document.createElement('div');
       head.className = 'card-head';
       var toggle = h.iconLabel('button', destravado ? 'check' : 'edit', destravado ? t.save : t.edit);
@@ -363,6 +381,7 @@
         destravado = !destravado;
         cardEditState[cardId] = destravado;
         controles.forEach(function (c) { c.disabled = !destravado; });
+        overlay.hidden = destravado;
         h.clear(toggle);
         toggle.appendChild(h.icon(destravado ? 'check' : 'edit'));
         toggle.appendChild(document.createTextNode(' ' + (destravado ? t.save : t.edit)));
