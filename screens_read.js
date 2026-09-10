@@ -29,11 +29,10 @@
     var r = h.el('div', 'row'); r.appendChild(h.el('span', 'k', k)); r.appendChild(h.el('span', 'v', v)); return r;
   }
 
-  // Fase 13 do redesign (Rodada 3): card de config nasce travado; "Editar" destrava, "Salvar"
-  // re-trava -- so a interacao, cada campo continua salvando sozinho ao mudar (decisao do dono).
-  // Precisa sobreviver ao reload completo que `onDone` dispara apos CADA escrita (S.config inteiro
-  // se reconstroi) -- sem isto, editar um campo já re-travaria o card antes do dono editar o
-  // proximo. Estado no escopo do modulo, chaveado por um id estavel de card (essentials, ou
+  // Fase 13 do redesign (Rodada 3): card de config nasce travado; "Editar" destrava. Fase 14
+  // (achado no gate): o dono trocou "cada campo salva sozinho ao mudar" por salvamento em lote --
+  // "Salvar" grava tudo que mudou desde que destravou, "Cancelar" descarta sem gravar nada.
+  // Estado no escopo do modulo, chaveado por um id estavel de card (essentials, ou
   // "categoria/grupo"); sobrevive a re-renderizacoes de S.config, reseta so ao recarregar a pagina.
   var cardEditState = {};
 
@@ -151,7 +150,24 @@
     });
   }
 
-  function attachEditor(ctx, row, item, onDone, t, h) {
+  // Fase 14 do redesign (Rodada 3, achado no gate): "Salvar" do card grava em lote tudo que ficou
+  // pendente durante a edicao -- um `writeSetting()` de cada vez (mesmo caminho de sempre, com o
+  // mesmo aviso de chave critica quando cabe), encadeados pra so recarregar a tela no final.
+  function salvarPendencias(ctx, itens, pendencias, onDone, h) {
+    var chaves = Object.keys(pendencias);
+    if (!chaves.length) { if (onDone) onDone(); return; }
+    var porChave = {};
+    itens.forEach(function (s) { porChave[s.key] = s; });
+    var i = 0;
+    function proxima() {
+      if (i >= chaves.length) { if (onDone) onDone(); return; }
+      var chave = chaves[i++];
+      writeSetting(ctx, porChave[chave], pendencias[chave], proxima, h);
+    }
+    proxima();
+  }
+
+  function attachEditor(ctx, row, item, t, h, pendencias) {
     if (!item.editable) return;
     if (item.kind === 'bool') {
       // Fase 9 do redesign (Rodada 2): switch nativo no lugar do botao on/off -- o proprio
@@ -161,10 +177,8 @@
       chk.className = 'switch';
       chk.checked = item.value === 'true';
       chk.disabled = true;  // Fase 13 do redesign (Rodada 3): card nasce travado.
-      chk.onchange = function () {
-        chk.disabled = true;
-        writeSetting(ctx, item, chk.checked ? 'true' : 'false', onDone, h);
-      };
+      // Fase 14 (achado no gate): so acumula em `pendencias` -- quem grava e o "Salvar" do card.
+      chk.onchange = function () { pendencias[item.key] = chk.checked ? 'true' : 'false'; };
       row.appendChild(chk);
       return chk;
     }
@@ -180,14 +194,8 @@
         sel.appendChild(opt);
       });
       sel.disabled = true;  // Fase 13 do redesign (Rodada 3): card nasce travado.
-      sel.onchange = function () {
-        var escolha = sel.value;
-        sel.disabled = true;
-        writeSetting(ctx, item, escolha, function () {
-          sel.disabled = false;
-          if (onDone) onDone();
-        }, h);
-      };
+      // Fase 14 (achado no gate): so acumula em `pendencias` -- quem grava e o "Salvar" do card.
+      sel.onchange = function () { pendencias[item.key] = sel.value; };
       row.appendChild(sel);
       return sel;
     }
@@ -226,10 +234,8 @@
         val.textContent = item.value;
         range.disabled = true;  // Fase 13 do redesign (Rodada 3): card nasce travado.
         range.oninput = function () { val.textContent = range.value; };
-        range.onchange = function () {
-          range.disabled = true;
-          writeSetting(ctx, item, range.value, onDone, h);
-        };
+        // Fase 14 (achado no gate): so acumula em `pendencias` -- quem grava e o "Salvar" do card.
+        range.onchange = function () { pendencias[item.key] = range.value; };
         var atualizaLimites = function () {
           var atual = parseFloat(range.value);
           menos.disabled = range.disabled || atual <= item.minimum;
@@ -238,14 +244,14 @@
         menos.onclick = function () {
           var novo = Math.max(item.minimum, parseFloat(range.value) - incremento);
           range.value = novo; val.textContent = String(novo);
-          range.disabled = true; atualizaLimites();
-          writeSetting(ctx, item, String(novo), onDone, h);
+          atualizaLimites();
+          pendencias[item.key] = String(novo);
         };
         mais.onclick = function () {
           var novo = Math.min(item.maximum, parseFloat(range.value) + incremento);
           range.value = novo; val.textContent = String(novo);
-          range.disabled = true; atualizaLimites();
-          writeSetting(ctx, item, String(novo), onDone, h);
+          atualizaLimites();
+          pendencias[item.key] = String(novo);
         };
         atualizaLimites();
         wrap.appendChild(menos); wrap.appendChild(range); wrap.appendChild(mais);
@@ -258,21 +264,17 @@
         num.step = passo;
         num.value = item.value;
         num.disabled = true;  // Fase 13 do redesign (Rodada 3): card nasce travado.
-        num.onchange = function () {
-          num.disabled = true;
-          writeSetting(ctx, item, num.value, onDone, h);
-        };
+        // Fase 14 (achado no gate): so acumula em `pendencias` -- quem grava e o "Salvar" do card.
+        num.onchange = function () { pendencias[item.key] = num.value; };
         menos.onclick = function () {
           var novo = (parseFloat(num.value) || 0) - incremento;
           num.value = novo;
-          num.disabled = true;
-          writeSetting(ctx, item, String(novo), onDone, h);
+          pendencias[item.key] = String(novo);
         };
         mais.onclick = function () {
           var novo = (parseFloat(num.value) || 0) + incremento;
           num.value = novo;
-          num.disabled = true;
-          writeSetting(ctx, item, String(novo), onDone, h);
+          pendencias[item.key] = String(novo);
         };
         wrap.appendChild(menos); wrap.appendChild(num); wrap.appendChild(mais);
         row.appendChild(wrap);
@@ -295,7 +297,9 @@
         lbl.textContent = item.key;
         var inp = document.createElement('input');
         inp.type = 'text';
-        inp.value = item.value;
+        // Fase 14 (achado no gate): reabrir o dialogo mostra o valor ja pendente nesta sessao de
+        // edicao (se houver), nao o valor antigo do servidor.
+        inp.value = pendencias[item.key] !== undefined ? pendencias[item.key] : item.value;
         var acoes = document.createElement('div');
         acoes.className = 'gk-dialog-actions';
         var cancelar = document.createElement('button');
@@ -306,9 +310,11 @@
         var salvar = document.createElement('button');
         salvar.type = 'button';
         salvar.textContent = t.save;
+        // Fase 14 (achado no gate): so acumula em `pendencias` -- quem grava e o "Salvar" do card.
         salvar.onclick = function () {
           dlg.close();
-          writeSetting(ctx, item, inp.value, onDone, h);
+          chip.textContent = inp.value || t.emptyValue;
+          pendencias[item.key] = inp.value;
         };
         acoes.appendChild(cancelar);
         acoes.appendChild(salvar);
@@ -386,6 +392,9 @@
     var body = document.createElement('div');
     body.className = 'card-body';
     var controles = [];
+    // Fase 14 do redesign (Rodada 3, achado no gate): edicoes ficam aqui enquanto o card esta
+    // destravado -- nada e gravado ate o dono tocar "Salvar" (ou descartado ao tocar "Cancelar").
+    var pendencias = {};
     itens.forEach(function (s) {
       var r = h.el('div', 'row');
       var k = h.el('span', 'k', s.key.replace(/^(GATEKEEPER|GOVERNOR)_/, ''));
@@ -403,7 +412,7 @@
       if (!s.editable) v.appendChild(h.icon('lock'));
       if (s.shadowed) { v.appendChild(h.icon('alert-triangle')); v.title = t.shadowed; }
       r.appendChild(k); r.appendChild(v);
-      var controle = attachEditor(ctx, r, s, onDone, t, h);
+      var controle = attachEditor(ctx, r, s, t, h, pendencias);
       // Fase 14 do redesign (Rodada 3): attachEditor() pode devolver mais de um controle (range
       // com botoes -/+ ao lado) -- os dois formatos (elemento unico ou array) sao aceitos aqui.
       if (Array.isArray(controle)) { controles = controles.concat(controle); }
@@ -429,7 +438,9 @@
     // (destravado ou nao) mora em `cardEditState`, sobrevive ao reload completo que `onDone`
     // dispara apos cada escrita. Camada de bloqueio (leve desfoque) cobre so o `.card-body`,
     // nunca o cabecalho -- da pra ler as configuracoes atras dela, so nao interagir (a trava real
-    // e o `disabled` dos controles; a camada e so o sinal visual).
+    // e o `disabled` dos controles; a camada e so o sinal visual). Fase 14 (achado no gate):
+    // destravado mostra DOIS botoes -- "Salvar" grava em lote tudo que ficou em `pendencias` e
+    // "Cancelar" descarta sem gravar nada (os dois voltam pro card travado com um reload).
     if (controles.length) {
       var destravado = !!cardEditState[cardId];
       controles.forEach(function (c) { c.disabled = !destravado; });
@@ -439,18 +450,38 @@
       body.appendChild(overlay);
       var head = document.createElement('div');
       head.className = 'card-head';
-      var toggle = h.iconLabel('button', destravado ? 'check' : 'edit', destravado ? t.save : t.edit);
-      toggle.className = 'edit-toggle';
-      toggle.onclick = function () {
-        destravado = !destravado;
-        cardEditState[cardId] = destravado;
-        controles.forEach(function (c) { c.disabled = !destravado; });
-        overlay.hidden = destravado;
-        h.clear(toggle);
-        toggle.appendChild(h.icon(destravado ? 'check' : 'edit'));
-        toggle.appendChild(document.createTextNode(' ' + (destravado ? t.save : t.edit)));
+      var renderHead = function () {
+        h.clear(head);
+        if (destravado) {
+          var salvar = h.iconLabel('button', 'check', t.save);
+          salvar.className = 'edit-toggle';
+          salvar.onclick = function () {
+            cardEditState[cardId] = false;
+            controles.forEach(function (c) { c.disabled = true; });
+            salvarPendencias(ctx, itens, pendencias, onDone, h);
+          };
+          var cancelar = h.iconLabel('button', 'x', t.cancel);
+          cancelar.className = 'edit-toggle cancel';
+          cancelar.onclick = function () {
+            cardEditState[cardId] = false;
+            onDone();
+          };
+          head.appendChild(salvar);
+          head.appendChild(cancelar);
+        } else {
+          var editar = h.iconLabel('button', 'edit', t.edit);
+          editar.className = 'edit-toggle';
+          editar.onclick = function () {
+            destravado = true;
+            cardEditState[cardId] = true;
+            controles.forEach(function (c) { c.disabled = false; });
+            overlay.hidden = true;
+            renderHead();
+          };
+          head.appendChild(editar);
+        }
       };
-      head.appendChild(toggle);
+      renderHead();
       card.insertBefore(head, card.firstChild);
     }
     return card;

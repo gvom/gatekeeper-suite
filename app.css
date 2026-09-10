@@ -100,8 +100,11 @@ textarea { width: 100%; background: var(--bg); color: var(--fg); border: 1px sol
 .chip { text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Fase 13 do redesign (Rodada 3): cabecalho de Editar/Salvar no topo de cada card de config --
    evita gravacao acidental ao tocar um campo sem querer; card nasce travado. */
-.card-head { display: flex; justify-content: flex-end; margin-bottom: var(--space-2); }
+.card-head { display: flex; justify-content: flex-end; gap: var(--space-2); margin-bottom: var(--space-2); }
 .edit-toggle { width: auto; padding: 4px 10px; font-size: var(--font-sm); }
+/* Fase 14 do redesign (Rodada 3): "Cancelar" some junto do "Salvar" quando o card destrava --
+   mesma cara do botao secundario ja usado no dialogo de texto/caminho. */
+.edit-toggle.cancel { background: transparent; border: 1px solid var(--border); color: var(--fg); }
 .gk-dialog { background: var(--card); color: var(--fg); border: 1px solid var(--border);
   border-radius: var(--radius-lg); padding: var(--space-4); max-width: 400px;
   width: calc(100% - 32px); }
