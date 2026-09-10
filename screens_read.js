@@ -35,6 +35,13 @@
   // "categoria/grupo"); sobrevive a re-renderizacoes de S.config, reseta so ao recarregar a pagina.
   var cardEditState = {};
 
+  // Achado no gate da Fase 13 (Rodada 3), pre-existente desde a Fase 4: o `<details>` de
+  // categoria nasce SEMPRE fechado a cada reconstrucao da tela -- e `onDone` reconstroi a tela
+  // inteira apos CADA escrita de config. Editar um campo dentro de uma categoria aberta fazia ela
+  // fechar sozinha na hora (lido pelo dono como "a tela fechando"). Mesmo padrao de persistencia
+  // que `cardEditState`: guarda quais categorias estao abertas, sobrevive ao reload completo.
+  var categoryOpenState = {};
+
   function pickLang(tg) {
     var code = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code) || 'en';
     return String(code).toLowerCase().indexOf('pt') === 0 ? 'pt' : 'en';
@@ -120,13 +127,7 @@
     } else if (tg) {
       tg.showAlert(msg);  // rede de seguranca: chamador que nao propagou `h` ainda funciona.
     }
-    // Achado no gate da Fase 13 (Rodada 3), pre-existente desde a Fase 9: no Telegram Android, a
-    // Mini App as vezes fecha sozinha ao editar QUALQUER campo. `onDone` reconstroi a tela inteira
-    // (h.clear(root) + rebuild) -- se isso acontece ainda dentro do mesmo ciclo do gesto de toque
-    // que disparou a escrita, o WebView do Android pode interpretar a destruicao abrupta do
-    // elemento tocado como um swipe de fechar. `setTimeout(.., 0)` adia a reconstrucao pro
-    // proximo ciclo do event loop, deixando o gesto atual assentar antes do DOM ser substituido.
-    if (onDone) setTimeout(onDone, 0);
+    if (onDone) onDone();
   }
 
   // Fase 9 do redesign (Rodada 2): fluxo de escrita unico, reaproveitado por todo kind de
@@ -293,18 +294,30 @@
       // Depois por categoria › grupo, na ordem do registry.
       // Fase 4 do redesign: `<details>`/`<summary>` — abre/fecha sozinho, sem JS de toggle,
       // acessivel e funciona com toque. Nao precisa de CDN nem string de HTML: o navegador ja
-      // sabe renderizar o triangulo/estado nativo do elemento.
+      // sabe renderizar o estado nativo do elemento. Fase 13 (Rodada 3): barra com titulo +
+      // seta a direita (marcador nativo removido, icone proprio no lugar -- CSS gira 180o quando
+      // aberto); conteudo mora dentro de uma caixa visual quando expandida; estado aberto/fechado
+      // persiste em `categoryOpenState` (evento nativo `toggle`), sobrevive ao reload de `onDone`.
       (resp.categories || []).forEach(function (cat) {
         var itens = (resp.settings || []).filter(function (s) { return s.category === cat; });
         if (!itens.length) return;
         var det = document.createElement('details');
+        det.className = 'cat-details';
+        det.open = !!categoryOpenState[cat];
+        det.addEventListener('toggle', function () { categoryOpenState[cat] = det.open; });
         var sum = document.createElement('summary');
-        sum.textContent = cat;
+        sum.appendChild(h.el('span', null, cat));
+        var chevron = h.icon('arrow-down');
+        chevron.classList.add('details-chevron');
+        sum.appendChild(chevron);
         det.appendChild(sum);
+        var conteudo = document.createElement('div');
+        conteudo.className = 'cat-content';
         var grupos = {};
         var ordem = [];
         itens.forEach(function (s) { var g = s.groupLabel || ''; if (!(g in grupos)) { grupos[g] = []; ordem.push(g); } grupos[g].push(s); });
-        ordem.forEach(function (g) { if (g) det.appendChild(h.el('p', 'muted', g)); det.appendChild(lista(ctx, grupos[g], t, h, onDone, cat + '/' + g)); });
+        ordem.forEach(function (g) { if (g) conteudo.appendChild(h.el('p', 'muted', g)); conteudo.appendChild(lista(ctx, grupos[g], t, h, onDone, cat + '/' + g)); });
+        det.appendChild(conteudo);
         root.appendChild(det);
       });
       var undo = h.iconLabel('button', 'undo', t.undo);

@@ -164,8 +164,16 @@ h1 .icon, h2 .icon { vertical-align: -2px; }
 pre { white-space: pre-wrap; word-break: break-word; background: var(--card);
   border-radius: 12px; padding: 12px; font-size: 13px; }
 h2 { font-size: 17px; margin: 16px 0 6px; }
-/* Fase 4 do redesign: categorias expansiveis do config — mesmo peso visual do h2, sem marcador
-   customizado (o triangulo nativo do <details> ja basta). */
-details { margin: 16px 0 6px; }
-details summary { font-size: 17px; font-weight: 600; cursor: pointer; }
-details[open] summary { margin-bottom: 6px; }
+/* Fase 4 do redesign: categorias expansiveis do config. Fase 13 (Rodada 3): vira uma barra com
+   titulo + seta a direita (marcador nativo do <details> removido, icone proprio no lugar -- gira
+   180deg quando aberto via CSS, sem JS extra); o conteudo (`.cat-content`) ganha caixa visual
+   propria quando expandido, em vez de flutuar solto logo abaixo da barra. */
+.cat-details { margin: var(--space-4) 0 var(--space-2); border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden; }
+.cat-details summary { list-style: none; display: flex; align-items: center;
+  justify-content: space-between; gap: var(--space-2); padding: var(--space-3);
+  font-size: 17px; font-weight: 600; cursor: pointer; background: var(--card); }
+.cat-details summary::-webkit-details-marker { display: none; }
+.details-chevron { flex: 0 0 auto; transition: transform var(--transition-fast); }
+.cat-details[open] .details-chevron { transform: rotate(180deg); }
+.cat-content { padding: var(--space-3); background: var(--bg); }
