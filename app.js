@@ -161,7 +161,8 @@
     no.appendChild(document.createTextNode(msg));
     no.hidden = false;
     if (_toastTimer) clearTimeout(_toastTimer);
-    _toastTimer = setTimeout(function () { no.hidden = true; }, 2500);
+    // Fase 13 do redesign (Rodada 3): 5s (era 2.5s) -- tempo maior pra ler a mensagem.
+    _toastTimer = setTimeout(function () { no.hidden = true; }, 5000);
   }
 
   function parseHash() {

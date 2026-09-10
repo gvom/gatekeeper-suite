@@ -97,10 +97,10 @@ textarea { width: 100%; background: var(--bg); color: var(--fg); border: 1px sol
 .gk-dialog-actions .cancel { background: transparent; border: 1px solid var(--border);
   color: var(--fg); }
 /* Fase 10 do redesign (Rodada 2): toast proprio no lugar de tg.showAlert -- fundo/borda neutros
-   da paleta fixa, faixa lateral colorida so quando o kind e semantico (Regra da Cor Rara: cor
-   pesa pouco, nao pinta o fundo inteiro). Fica ACIMA da barra de navegacao (Fase 8), por isso o
-   z-index maior. */
-#toast { position: fixed; left: 16px; right: 16px; bottom: calc(72px + env(safe-area-inset-bottom));
+   da paleta fixa, cor semantica so no icone (Regra da Cor Rara: cor pesa pouco, nao pinta o
+   fundo/faixa do card inteiro). Fase 13 (Rodada 3): reposicionado pro topo (era acima da barra de
+   navegacao) -- fica logo abaixo do cabecalho, z-index alto pra sobrepor qualquer conteudo. */
+#toast { position: fixed; left: 16px; right: 16px; top: max(56px, env(safe-area-inset-top) + 44px);
   z-index: 20; background: var(--card); color: var(--fg); border: 1px solid var(--border);
   border-radius: var(--radius-md); padding: var(--space-3); font-size: var(--font-sm);
   display: flex; align-items: center; gap: var(--space-2); }
