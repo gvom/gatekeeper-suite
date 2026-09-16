@@ -98,6 +98,14 @@ textarea { width: 100%; background: var(--bg); color: var(--fg); border: 1px sol
    resolve o overflow de caber um input na linha apertada do row, e o proprio chip demonstra o
    valor atual (trunca com reticencias quando comprido). */
 .chip { text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Fase 15 do redesign (Rodada 3): chips de multi-selecao pro GATEKEEPER_SMART_REVIEW_TIERS -- 3
+   opcoes lado a lado, marcado usa o mesmo acento de marca que switch/select ja usam (Regra da Cor
+   Rara do DESIGN.md: cor pesa pouco, so no elemento marcado). */
+.chip-group { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.tier-chip { width: auto; flex: 0 1 auto; background: transparent; color: var(--fg);
+  border: 1px solid var(--border); padding: 6px 12px; font-size: var(--font-sm); }
+.tier-chip.selected { background: var(--btn); color: var(--btn-fg); border-color: var(--btn); }
+.tier-chip:disabled { opacity: .55; }
 /* Fase 13 do redesign (Rodada 3): cabecalho de Editar/Salvar no topo de cada card de config --
    evita gravacao acidental ao tocar um campo sem querer; card nasce travado. */
 .card-head { display: flex; justify-content: flex-end; gap: var(--space-2); margin-bottom: var(--space-2); }

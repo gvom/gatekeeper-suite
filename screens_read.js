@@ -13,7 +13,8 @@
           undo: 'Desfazer última', restartQ: 'Reiniciar o daemon agora?',
           save: 'Salvar', cancel: 'Cancelar', emptyValue: '(vazio)',
           activeSessions: 'Sessões ativas', edit: 'Editar',
-          decrease: 'Diminuir', increase: 'Aumentar' },
+          decrease: 'Diminuir', increase: 'Aumentar',
+          invalidHour: 'Hora inválida -- use 0 a 23, ou deixe vazio pra desligar.' },
     en: { state: 'State', session: 'Session', inflight: 'Tools in flight', subagents: 'Subagents',
           indicative: 'indicative', goal: 'Goal', phase: 'Phase', open: 'Open phases',
           waiting: 'Waiting', activity: 'Last activity', notes: 'Notes', failures: 'Failures',
@@ -22,7 +23,8 @@
           undo: 'Undo last', restartQ: 'Restart the daemon now?',
           save: 'Save', cancel: 'Cancel', emptyValue: '(empty)',
           activeSessions: 'Active sessions', edit: 'Edit',
-          decrease: 'Decrease', increase: 'Increase' }
+          decrease: 'Decrease', increase: 'Increase',
+          invalidHour: 'Invalid hour -- use 0 to 23, or leave empty to disable.' }
   };
 
   function row(h, k, v) {
@@ -167,8 +169,71 @@
     proxima();
   }
 
+  var SMART_REVIEW_TIERS_CONHECIDOS = ['safe', 'project', 'suspicious'];
+
+  // Fase 15 do redesign (Rodada 3): `notifications.py` ja trata qualquer valor fora de "vazio ou
+  // 0-23" como desligado silenciosamente -- a validacao aqui e so pra avisar o dono na hora em vez
+  // de aceitar um valor que na pratica nao faz nada.
+  var HORA_VALIDACAO_CHAVES = ['GATEKEEPER_NOTIFY_QUIET_START', 'GATEKEEPER_NOTIFY_QUIET_END'];
+  function horaValida(v) {
+    if (v === '') return true;
+    if (!/^\d+$/.test(v)) return false;
+    var n = parseInt(v, 10);
+    return n >= 0 && n <= 23;
+  }
+  // Bloqueia o Salvar do dialogo em vez de aceitar um valor que o backend so ia ignorar.
+  function aplicaValidacaoHora(inp, salvar, t) {
+    var erroHora = document.createElement('p');
+    erroHora.className = 'muted err';
+    erroHora.textContent = t.invalidHour;
+    var validaCampo = function () {
+      var valido = horaValida(inp.value.trim());
+      erroHora.hidden = valido;
+      salvar.disabled = !valido;
+    };
+    inp.oninput = validaCampo;
+    validaCampo();
+    return erroHora;
+  }
+
+  function attachTiersChips(item, t, h, pendencias, row) {
+    var atuais = (item.value || '').split(',').map(function (v) { return v.trim(); }).filter(Boolean);
+    var selecionados = atuais.slice();
+    var wrapTiers = document.createElement('div');
+    wrapTiers.className = 'chip-group row-control';
+    var chipsEls = [];
+    SMART_REVIEW_TIERS_CONHECIDOS.forEach(function (tierNome) {
+      var chipTier = document.createElement('button');
+      chipTier.type = 'button';
+      chipTier.className = 'tier-chip';
+      chipTier.textContent = tierNome;
+      chipTier.disabled = true;  // Fase 13 do redesign (Rodada 3): card nasce travado.
+      var marcaSelecionado = function () {
+        var marcado = selecionados.indexOf(tierNome) !== -1;
+        chipTier.setAttribute('aria-pressed', marcado ? 'true' : 'false');
+        chipTier.classList.toggle('selected', marcado);
+      };
+      marcaSelecionado();
+      chipTier.onclick = function () {
+        var pos = selecionados.indexOf(tierNome);
+        if (pos !== -1) { selecionados.splice(pos, 1); } else { selecionados.push(tierNome); }
+        marcaSelecionado();
+        pendencias[item.key] = selecionados.join(',');
+      };
+      wrapTiers.appendChild(chipTier);
+      chipsEls.push(chipTier);
+    });
+    row.appendChild(wrapTiers);
+    return chipsEls;
+  }
+
   function attachEditor(ctx, row, item, t, h, pendencias) {
     if (!item.editable) return;
+    // Fase 15 do redesign (Rodada 3): as 3 unicas opcoes reais que esta chave aceita (confirmado
+    // lendo `_classify_edit()` no backend -- so safe/project/suspicious, nao os ~7 imaginados no
+    // rascunho original do plano) viram chips de multi-selecao. Chave continua `kind=text` no
+    // registry (nao e um enum de valor unico), valor gravado como CSV.
+    if (item.key === 'GATEKEEPER_SMART_REVIEW_TIERS') return attachTiersChips(item, t, h, pendencias, row);
     if (item.kind === 'bool') {
       // Fase 9 do redesign (Rodada 2): switch nativo no lugar do botao on/off -- o proprio
       // controle ja demonstra o estado (marcado/desmarcado), sem precisar de texto ao lado.
@@ -320,6 +385,7 @@
         acoes.appendChild(salvar);
         dlg.appendChild(lbl);
         dlg.appendChild(inp);
+        if (HORA_VALIDACAO_CHAVES.indexOf(item.key) !== -1) dlg.appendChild(aplicaValidacaoHora(inp, salvar, t));
         dlg.appendChild(acoes);
         dlg.addEventListener('close', function () { dlg.remove(); });
         row.appendChild(dlg);
