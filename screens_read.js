@@ -15,7 +15,8 @@
           activeSessions: 'Sessões ativas', edit: 'Editar',
           decrease: 'Diminuir', increase: 'Aumentar',
           invalidHour: 'Hora inválida -- use 0 a 23, ou deixe vazio pra desligar.',
-          modelProbeFailed: 'Não deu pra confirmar a lista real de modelos (rede ou credencial). Digite o nome manualmente.' },
+          modelProbeFailed: 'Não deu pra confirmar a lista real de modelos (rede ou credencial). Digite o nome manualmente.',
+          modelProbeLoading: 'Buscando modelos reais do provedor...' },
     en: { state: 'State', session: 'Session', inflight: 'Tools in flight', subagents: 'Subagents',
           indicative: 'indicative', goal: 'Goal', phase: 'Phase', open: 'Open phases',
           waiting: 'Waiting', activity: 'Last activity', notes: 'Notes', failures: 'Failures',
@@ -26,7 +27,8 @@
           activeSessions: 'Active sessions', edit: 'Edit',
           decrease: 'Decrease', increase: 'Increase',
           invalidHour: 'Invalid hour -- use 0 to 23, or leave empty to disable.',
-          modelProbeFailed: 'Could not confirm the real model list (network or credential). Type the name manually.' }
+          modelProbeFailed: 'Could not confirm the real model list (network or credential). Type the name manually.',
+          modelProbeLoading: 'Looking up the real models from the provider...' }
   };
 
   function row(h, k, v) {
@@ -429,15 +431,19 @@
         if (HORA_VALIDACAO_CHAVES.indexOf(item.key) !== -1) dlg.appendChild(aplicaValidacaoHora(inp, salvar, t));
         var backendModelo = MODELO_CHAVE_BACKEND[item.key];
         if (backendModelo) {
+          // Achado no gate: alguns provedores (ex Ollama local) demoram alguns segundos pra
+          // responder -- sem aviso visivel na hora, parecia que nada estava acontecendo. Mostra
+          // "buscando..." desde o inicio, troca pro select (sucesso) ou pro aviso de falha (nunca
+          // some sem dizer nada -- ou um ou outro, sempre visivel).
           var avisoModelo = document.createElement('p');
           avisoModelo.className = 'muted';
-          avisoModelo.textContent = t.modelProbeFailed;
-          avisoModelo.hidden = true;
+          avisoModelo.textContent = t.modelProbeLoading;
           dlg.appendChild(avisoModelo);
           buscaSelectDeModelos(ctx, h, backendModelo, inp.value).then(function (sel) {
             inp.replaceWith(sel);
             inp = sel;
-          }).catch(function () { avisoModelo.hidden = false; });
+            avisoModelo.remove();
+          }).catch(function () { avisoModelo.textContent = t.modelProbeFailed; });
         }
         dlg.appendChild(acoes);
         dlg.addEventListener('close', function () { dlg.remove(); });
