@@ -16,7 +16,9 @@
           decrease: 'Diminuir', increase: 'Aumentar',
           invalidHour: 'Hora inválida -- use 0 a 23, ou deixe vazio pra desligar.',
           modelProbeFailed: 'Não deu pra confirmar a lista real de modelos (rede ou credencial). Digite o nome manualmente.',
-          modelProbeLoading: 'Buscando modelos reais do provedor...' },
+          modelProbeLoading: 'Buscando modelos reais do provedor...',
+          moveUp: 'Mover pra cima', moveDown: 'Mover pra baixo', removeItem: 'Remover',
+          addItem: 'Adicionar' },
     en: { state: 'State', session: 'Session', inflight: 'Tools in flight', subagents: 'Subagents',
           indicative: 'indicative', goal: 'Goal', phase: 'Phase', open: 'Open phases',
           waiting: 'Waiting', activity: 'Last activity', notes: 'Notes', failures: 'Failures',
@@ -28,7 +30,9 @@
           decrease: 'Decrease', increase: 'Increase',
           invalidHour: 'Invalid hour -- use 0 to 23, or leave empty to disable.',
           modelProbeFailed: 'Could not confirm the real model list (network or credential). Type the name manually.',
-          modelProbeLoading: 'Looking up the real models from the provider...' }
+          modelProbeLoading: 'Looking up the real models from the provider...',
+          moveUp: 'Move up', moveDown: 'Move down', removeItem: 'Remove',
+          addItem: 'Add' }
   };
 
   function row(h, k, v) {
@@ -175,6 +179,12 @@
 
   var SMART_REVIEW_TIERS_CONHECIDOS = ['safe', 'project', 'suspicious'];
 
+  // Fase 17 do redesign (Rodada 3): mesma allowlist canonica de GATEKEEPER_BACKEND (backend,
+  // config_registry.py) -- essa chave e deprecated, entao nunca chega na resposta /config (mesmo
+  // achado da Fase 15 com FALLBACK_BACKEND); precisa de copia propria aqui.
+  var BACKEND_CHAIN_CONHECIDOS = ['ollama', 'gemini', 'cerebras', 'custom', 'claude', 'openai',
+    'openrouter', 'huggingface'];
+
   // Fase 15 do redesign (Rodada 3): `notifications.py` ja trata qualquer valor fora de "vazio ou
   // 0-23" como desligado silenciosamente -- a validacao aqui e so pra avisar o dono na hora em vez
   // de aceitar um valor que na pratica nao faz nada.
@@ -270,6 +280,96 @@
     return chipsEls;
   }
 
+  // Fase 17 do redesign (Rodada 3): controle de GATEKEEPER_BACKEND_CHAIN -- reordenar/adicionar/
+  // remover, nunca digitar texto livre (elimina o typo silencioso que motivou manter esta chave
+  // travada ate aqui; reforcado tambem no validate() do servidor, Task 1). Numero de linhas muda
+  // (add/remove), diferente de todo outro controle (numero fixo de elementos) -- por isso devolve
+  // um wrapper com `.disabled` customizado via defineProperty em vez de uma lista de elementos: e
+  // o unico jeito do card travar/destravar este controle sem `lista()` precisar saber que ele e
+  // dinamico.
+  function attachBackendChainEditor(item, pendencias, t, h, row) {
+    var atuais = (item.value || '').split(',').map(function (v) { return v.trim(); }).filter(Boolean);
+    var travado = true;
+    var wrap = document.createElement('div');
+    wrap.className = 'chain-editor row-control';
+    var listaEl = document.createElement('div');
+    listaEl.className = 'chain-list';
+    var selectAdd = document.createElement('select');
+    selectAdd.className = 'row-control';
+    var botaoAdd = document.createElement('button');
+    botaoAdd.type = 'button';
+    botaoAdd.textContent = t.addItem;
+
+    function atualizaCsv() { pendencias[item.key] = atuais.join(','); }
+
+    function redesenhaLista() {
+      h.clear(listaEl);
+      atuais.forEach(function (nome, indice) {
+        var linha = document.createElement('div');
+        linha.className = 'chain-item';
+        linha.appendChild(h.el('span', 'chain-nome', nome));
+        var subir = document.createElement('button');
+        subir.type = 'button'; subir.className = 'stepper-btn';
+        subir.textContent = '▲'; subir.setAttribute('aria-label', t.moveUp);
+        subir.disabled = travado || indice === 0;
+        subir.onclick = function () {
+          var tmp = atuais[indice - 1]; atuais[indice - 1] = atuais[indice]; atuais[indice] = tmp;
+          atualizaCsv(); redesenhaLista();
+        };
+        var descer = document.createElement('button');
+        descer.type = 'button'; descer.className = 'stepper-btn';
+        descer.textContent = '▼'; descer.setAttribute('aria-label', t.moveDown);
+        descer.disabled = travado || indice === atuais.length - 1;
+        descer.onclick = function () {
+          var tmp = atuais[indice + 1]; atuais[indice + 1] = atuais[indice]; atuais[indice] = tmp;
+          atualizaCsv(); redesenhaLista();
+        };
+        var remover = document.createElement('button');
+        remover.type = 'button'; remover.className = 'stepper-btn';
+        remover.textContent = '✕'; remover.setAttribute('aria-label', t.removeItem);
+        remover.disabled = travado;
+        remover.onclick = function () {
+          atuais.splice(indice, 1);
+          atualizaCsv(); redesenhaLista(); redesenhaSelect();
+        };
+        linha.appendChild(subir); linha.appendChild(descer); linha.appendChild(remover);
+        listaEl.appendChild(linha);
+      });
+    }
+
+    function redesenhaSelect() {
+      h.clear(selectAdd);
+      BACKEND_CHAIN_CONHECIDOS.filter(function (b) { return atuais.indexOf(b) === -1; })
+        .forEach(function (nome) {
+          var opt = document.createElement('option');
+          opt.value = nome; opt.textContent = nome;
+          selectAdd.appendChild(opt);
+        });
+      var semOpcoes = selectAdd.children.length === 0;
+      selectAdd.disabled = travado || semOpcoes;
+      botaoAdd.disabled = travado || semOpcoes;
+    }
+
+    botaoAdd.onclick = function () {
+      if (!selectAdd.value) return;
+      atuais.push(selectAdd.value);
+      atualizaCsv(); redesenhaLista(); redesenhaSelect();
+    };
+
+    Object.defineProperty(wrap, 'disabled', {
+      get: function () { return travado; },
+      set: function (v) { travado = !!v; redesenhaLista(); redesenhaSelect(); }
+    });
+
+    redesenhaLista(); redesenhaSelect();
+    var addRow = document.createElement('div');
+    addRow.className = 'chain-add-row';
+    addRow.appendChild(selectAdd); addRow.appendChild(botaoAdd);
+    wrap.appendChild(listaEl); wrap.appendChild(addRow);
+    row.appendChild(wrap);
+    return wrap;
+  }
+
   function attachEditor(ctx, row, item, t, h, pendencias) {
     if (!item.editable) return;
     // Fase 15 do redesign (Rodada 3): as 3 unicas opcoes reais que esta chave aceita (confirmado
@@ -277,6 +377,7 @@
     // rascunho original do plano) viram chips de multi-selecao. Chave continua `kind=text` no
     // registry (nao e um enum de valor unico), valor gravado como CSV.
     if (item.key === 'GATEKEEPER_SMART_REVIEW_TIERS') return attachTiersChips(item, t, h, pendencias, row);
+    if (item.key === 'GATEKEEPER_BACKEND_CHAIN') return attachBackendChainEditor(item, pendencias, t, h, row);
     if (item.kind === 'bool') {
       // Fase 9 do redesign (Rodada 2): switch nativo no lugar do botao on/off -- o proprio
       // controle ja demonstra o estado (marcado/desmarcado), sem precisar de texto ao lado.

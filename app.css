@@ -106,6 +106,18 @@ textarea { width: 100%; background: var(--bg); color: var(--fg); border: 1px sol
   border: 1px solid var(--border); padding: 6px 12px; font-size: var(--font-sm); }
 .tier-chip.selected { background: var(--btn); color: var(--btn-fg); border-color: var(--btn); }
 .tier-chip:disabled { opacity: .55; }
+/* Fase 17 do redesign (Rodada 3): editor de GATEKEEPER_BACKEND_CHAIN -- lista com botoes de
+   reordenar/remover por linha, select+botao de adicionar embaixo. Largura total (ocupa a linha
+   inteira), diferente dos outros controles que ficam lado a lado com a chave. */
+.chain-editor { width: 100%; }
+.chain-list { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-2); }
+.chain-item { display: flex; align-items: center; gap: var(--space-2);
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 6px 10px; }
+.chain-nome { flex: 1 1 auto; font-size: var(--font-sm); }
+.chain-add-row { display: flex; gap: var(--space-2); }
+.chain-add-row select { flex: 1 1 auto; }
+.chain-add-row button { width: auto; flex: 0 0 auto; }
 /* Fase 13 do redesign (Rodada 3): cabecalho de Editar/Salvar no topo de cada card de config --
    evita gravacao acidental ao tocar um campo sem querer; card nasce travado. */
 .card-head { display: flex; justify-content: flex-end; gap: var(--space-2); margin-bottom: var(--space-2); }
