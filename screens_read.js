@@ -14,7 +14,8 @@
           save: 'Salvar', cancel: 'Cancelar', emptyValue: '(vazio)',
           activeSessions: 'Sessões ativas', edit: 'Editar',
           decrease: 'Diminuir', increase: 'Aumentar',
-          invalidHour: 'Hora inválida -- use 0 a 23, ou deixe vazio pra desligar.' },
+          invalidHour: 'Hora inválida -- use 0 a 23, ou deixe vazio pra desligar.',
+          modelProbeFailed: 'Não deu pra confirmar a lista real de modelos (rede ou credencial). Digite o nome manualmente.' },
     en: { state: 'State', session: 'Session', inflight: 'Tools in flight', subagents: 'Subagents',
           indicative: 'indicative', goal: 'Goal', phase: 'Phase', open: 'Open phases',
           waiting: 'Waiting', activity: 'Last activity', notes: 'Notes', failures: 'Failures',
@@ -24,7 +25,8 @@
           save: 'Save', cancel: 'Cancel', emptyValue: '(empty)',
           activeSessions: 'Active sessions', edit: 'Edit',
           decrease: 'Decrease', increase: 'Increase',
-          invalidHour: 'Invalid hour -- use 0 to 23, or leave empty to disable.' }
+          invalidHour: 'Invalid hour -- use 0 to 23, or leave empty to disable.',
+          modelProbeFailed: 'Could not confirm the real model list (network or credential). Type the name manually.' }
   };
 
   function row(h, k, v) {
@@ -175,6 +177,20 @@
   // 0-23" como desligado silenciosamente -- a validacao aqui e so pra avisar o dono na hora em vez
   // de aceitar um valor que na pratica nao faz nada.
   var HORA_VALIDACAO_CHAVES = ['GATEKEEPER_NOTIFY_QUIET_START', 'GATEKEEPER_NOTIFY_QUIET_END'];
+
+  // Fase 16 do redesign (Rodada 3): espelha o mapeamento chave->backend da rota
+  // `GET providers/<backend>` (`suite_core/miniapp/routes_read.py`) -- nao ha modulo compartilhado
+  // entre Python e JS, mapa pequeno (8 entradas), duplicacao aceitavel.
+  var MODELO_CHAVE_BACKEND = {
+    GATEKEEPER_MODEL: 'ollama',
+    GATEKEEPER_GEMINI_MODEL: 'gemini',
+    GATEKEEPER_CEREBRAS_MODEL: 'cerebras',
+    GATEKEEPER_CUSTOM_MODEL: 'custom',
+    GATEKEEPER_OPENAI_MODEL: 'openai',
+    GATEKEEPER_OPENROUTER_MODEL: 'openrouter',
+    GATEKEEPER_CLAUDE_MODEL: 'claude',
+    GATEKEEPER_CLAUDE_HEADLESS_MODEL: 'claude'
+  };
   function horaValida(v) {
     if (v === '') return true;
     if (!/^\d+$/.test(v)) return false;
@@ -182,6 +198,31 @@
     return n >= 0 && n <= 23;
   }
   // Bloqueia o Salvar do dialogo em vez de aceitar um valor que o backend so ia ignorar.
+  // Fase 16 do redesign (Rodada 3): busca a lista real de modelos do provedor (rota
+  // `providers/<backend>`, sem chamada de inferencia) e devolve um <select> pronto -- quem chama
+  // decide o que fazer se a promise falhar (nunca bloqueia a edicao, so nao troca o input).
+  // `backend` sempre vem de `MODELO_CHAVE_BACKEND` (mapa fixo, nunca entrada do usuario); o
+  // servidor tambem valida contra a allowlist de `providers.SPECS` (Fase 16, Task 1).
+  function buscaSelectDeModelos(ctx, h, backend, valorAtual) {
+    return h.api(ctx, 'GET', 'providers/' + backend).then(function (resp) {
+      if (!resp.reachable || !resp.models || !resp.models.length) throw new Error('unreachable');
+      var sel = document.createElement('select');
+      var temValorAtual = false;
+      resp.models.forEach(function (modelo) {
+        var opt = document.createElement('option');
+        opt.value = modelo; opt.textContent = modelo;
+        if (modelo === valorAtual) { opt.selected = true; temValorAtual = true; }
+        sel.appendChild(opt);
+      });
+      if (!temValorAtual && valorAtual) {
+        var extra = document.createElement('option');
+        extra.value = valorAtual; extra.textContent = valorAtual; extra.selected = true;
+        sel.insertBefore(extra, sel.firstChild);
+      }
+      return sel;
+    });
+  }
+
   function aplicaValidacaoHora(inp, salvar, t) {
     var erroHora = document.createElement('p');
     erroHora.className = 'muted err';
@@ -386,6 +427,18 @@
         dlg.appendChild(lbl);
         dlg.appendChild(inp);
         if (HORA_VALIDACAO_CHAVES.indexOf(item.key) !== -1) dlg.appendChild(aplicaValidacaoHora(inp, salvar, t));
+        var backendModelo = MODELO_CHAVE_BACKEND[item.key];
+        if (backendModelo) {
+          var avisoModelo = document.createElement('p');
+          avisoModelo.className = 'muted';
+          avisoModelo.textContent = t.modelProbeFailed;
+          avisoModelo.hidden = true;
+          dlg.appendChild(avisoModelo);
+          buscaSelectDeModelos(ctx, h, backendModelo, inp.value).then(function (sel) {
+            inp.replaceWith(sel);
+            inp = sel;
+          }).catch(function () { avisoModelo.hidden = false; });
+        }
         dlg.appendChild(acoes);
         dlg.addEventListener('close', function () { dlg.remove(); });
         row.appendChild(dlg);

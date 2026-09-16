@@ -122,6 +122,11 @@ textarea { width: 100%; background: var(--bg); color: var(--fg); border: 1px sol
 .gk-dialog input[type="text"] { width: 100%; background: var(--bg); color: var(--fg);
   border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px;
   font-size: 16px; }
+/* Fase 16 do redesign (Rodada 3): troca o input por este select quando a busca de modelos reais
+   do provedor da certo -- mesma cara do input de texto que ele substitui. */
+.gk-dialog select { width: 100%; background: var(--bg); color: var(--fg);
+  border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px;
+  font-size: 16px; }
 .gk-dialog-actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
 .gk-dialog-actions button { width: auto; flex: 1; }
 .gk-dialog-actions .cancel { background: transparent; border: 1px solid var(--border);
