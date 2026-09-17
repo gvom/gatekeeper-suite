@@ -220,3 +220,26 @@ h2 { font-size: 17px; margin: 16px 0 6px; }
 .details-chevron { flex: 0 0 auto; transition: transform var(--transition-fast); }
 .cat-details[open] .details-chevron { transform: rotate(180deg); }
 .cat-content { padding: var(--space-3); background: var(--bg); }
+/* Rodada 5: dashboard de uso/sessoes (nova tela inicial). Barra de progresso das janelas de uso
+   -- a cor do preenchimento e escolhida em JS por faixa de utilizacao (Regra da Cor Rara: so o
+   dado que importa muda de cor, a trilha fica neutra). */
+.usage-bar { height: 8px; border-radius: 999px; background: var(--border); overflow: hidden;
+  margin: var(--space-2) 0; }
+.usage-bar-fill { height: 100%; border-radius: 999px; transition: width var(--transition-fast); }
+/* Selo de status por sessao -- fundo tenue na mesma cor semantica do texto (nunca faixa solida
+   cobrindo o card, mesma disciplina do toast/achado de outras fases). */
+.status-pill { display: inline-flex; align-items: center; padding: 2px 10px;
+  border-radius: 999px; font-size: var(--font-sm); font-weight: 600; flex: 0 0 auto; }
+.status-pill-running { background: rgba(63, 185, 80, .15); color: var(--success); }
+.status-pill-paused { background: rgba(210, 153, 34, .15); color: var(--warning); }
+.status-pill-waiting_reset { background: rgba(240, 72, 62, .15); color: var(--danger); }
+.session-card-head { display: flex; justify-content: space-between; align-items: center;
+  gap: var(--space-2); margin-bottom: var(--space-2); }
+.session-card-goal { font-weight: 600; min-width: 0; overflow-wrap: break-word; }
+.session-meta { display: flex; gap: var(--space-3); flex-wrap: wrap; color: var(--hint);
+  font-size: var(--font-sm); margin-bottom: var(--space-3); }
+/* Estado vazio ilustrado (aba Acoes sem nada pendente) -- pedido do dono no lugar da tela em
+   branco de antes. */
+.empty-state { display: flex; flex-direction: column; align-items: center;
+  justify-content: center; text-align: center; padding: 48px var(--space-4); gap: var(--space-3); }
+.empty-state img { width: 180px; max-width: 80%; height: auto; }

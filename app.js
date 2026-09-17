@@ -32,7 +32,13 @@
           permFloorUp: 'Subir piso', permFloorDown: 'Descer piso', permFloorNow: 'Piso atual: ',
           permApplying: 'Aplicando…',
           permStateFail: 'Não foi possível aplicar agora — tente de novo.', retry: 'Tentar de novo',
-          permFeedback: 'Anotação (opcional)' },
+          permFeedback: 'Anotação (opcional)',
+          actions: 'Ações', emptyActions: 'Nada pendente por aqui agora.',
+          dashFiveHour: '5 horas', dashWeekly: 'Semanal', dashResetsAt: 'Reinicia em ',
+          dashNoUsage: 'Sem dados de uso agora.', dashNoSessions: 'Nenhuma sessão ativa agora.',
+          dashTokens: 'tokens', dashEstimated: 'estimado', dashPause: 'Pausar',
+          dashResume: 'Continuar', dashRunning: 'Executando', dashPaused: 'Pausada',
+          dashWaitingReset: 'Esperando reset' },
     en: { connecting: 'Connecting…', offline: 'Backend unavailable — answer in chat.',
           close: 'Close', badApi: 'Invalid API address.', notTelegram: 'Open from Telegram.',
           home: 'Home', preparing: 'Screen in preparation — use chat.',
@@ -55,7 +61,13 @@
           permFloorUp: 'Raise floor', permFloorDown: 'Lower floor', permFloorNow: 'Current floor: ',
           permApplying: 'Applying…',
           permStateFail: 'Could not apply now — try again.', retry: 'Try again',
-          permFeedback: 'Note (optional)' }
+          permFeedback: 'Note (optional)',
+          actions: 'Actions', emptyActions: 'Nothing pending here right now.',
+          dashFiveHour: '5 hours', dashWeekly: 'Weekly', dashResetsAt: 'Resets at ',
+          dashNoUsage: 'No usage data right now.', dashNoSessions: 'No active sessions right now.',
+          dashTokens: 'tokens', dashEstimated: 'estimated', dashPause: 'Pause',
+          dashResume: 'Continue', dashRunning: 'Running', dashPaused: 'Paused',
+          dashWaitingReset: 'Waiting for reset' }
   };
 
   function lang() {
@@ -125,7 +137,10 @@
            { t: 'line', a: { x1: 5.5, y1: 12, x2: 3.2, y2: 12 } },
            { t: 'line', a: { x1: 7.4, y1: 7.4, x2: 5.8, y2: 5.8 } },
            { t: 'line', a: { x1: 12, y1: 5.5, x2: 12, y2: 3.2 } },
-           { t: 'line', a: { x1: 16.6, y1: 7.4, x2: 18.2, y2: 5.8 } }]
+           { t: 'line', a: { x1: 16.6, y1: 7.4, x2: 18.2, y2: 5.8 } }],
+    // Rodada 5 (dashboard): duas barras verticais preenchidas -- botao Pausar por sessao.
+    pause: [{ t: 'rect', a: { x: 6, y: 4, width: 4, height: 16, fill: 'currentColor', stroke: 'none' } },
+            { t: 'rect', a: { x: 14, y: 4, width: 4, height: 16, fill: 'currentColor', stroke: 'none' } }]
   };
   function icon(name) {
     var svg = svgEl('svg', { viewBox: '0 0 24 24', width: '16', height: '16', fill: 'none',
@@ -140,6 +155,25 @@
     n.appendChild(icon(name));
     n.appendChild(document.createTextNode(' ' + texto));
     return n;
+  }
+
+  // Rodada 5 (dashboard): formatadores de exibicao, sem lib externa.
+  function formatElapsed(s) {
+    if (s == null) return '';
+    s = Math.max(0, Math.floor(s));
+    var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    return h > 0 ? (h + 'h ' + m + 'min') : (m + 'min');
+  }
+  function formatTokens(n) {
+    n = Number(n) || 0;
+    return n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n);
+  }
+  function formatResetAt(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString(lang() === 'pt' ? 'pt-BR' : 'en-US',
+      { dateStyle: 'short', timeStyle: 'short' });
   }
 
   // Fase 3 do redesign: esqueleto de carregamento — substitui a tela em branco entre abrir e o
@@ -550,50 +584,132 @@
     }).catch(function () { limpar(); h.fallback(undefined, function () { renderScreen(ctx); }); });
   };
 
-  // Fase 1 do redesign (plano pos-Arco-C): tela inicial quando a Mini App abre sem `#screen`
-  // (Menu Button do Telegram). Mostra um resumo do status e, se houver, atalhos para retomar
-  // decisoes em aberto no Decision Inbox (GET pending — leitura, nunca decide nada). Duas
-  // buscas independentes (status/pending); o esqueleto some quando as duas terminarem, sucesso ou
-  // falha — nenhuma delas sozinha decide o estado de carregamento da tela toda.
+  var DASH_STATUS_LABELS = { running: 'dashRunning', paused: 'dashPaused',
+                            waiting_reset: 'dashWaitingReset' };
+
+  function dashUsageCard(h, titulo, janela) {
+    var card = h.el('div', 'card');
+    card.appendChild(h.el('p', null, titulo));
+    if (!janela || janela.utilization == null) {
+      card.appendChild(h.el('p', 'muted', L.dashNoUsage));
+      return card;
+    }
+    var pct = Math.max(0, Math.min(100, Number(janela.utilization) || 0));
+    var trilha = h.el('div', 'usage-bar');
+    var preenchido = h.el('div', 'usage-bar-fill');
+    preenchido.style.width = pct + '%';
+    preenchido.style.background = pct >= 90 ? 'var(--danger)' : (pct >= 70 ? 'var(--warning)' : 'var(--success)');
+    trilha.appendChild(preenchido);
+    card.appendChild(trilha);
+    var legenda = pct.toFixed(0) + '%' +
+      (janela.resetsAt ? ' · ' + L.dashResetsAt + formatResetAt(janela.resetsAt) : '');
+    card.appendChild(h.el('p', 'muted', legenda));
+    return card;
+  }
+
+  function dashSessionCard(ctx, root, h, s) {
+    var card = h.el('div', 'card');
+    var head = h.el('div', 'session-card-head');
+    head.appendChild(h.el('span', 'session-card-goal', s.goal || s.sessionId));
+    head.appendChild(h.el('span', 'status-pill status-pill-' + s.status,
+      L[DASH_STATUS_LABELS[s.status]] || s.status));
+    card.appendChild(head);
+    var meta = h.el('div', 'session-meta');
+    if (s.elapsedS != null) meta.appendChild(h.el('span', null, formatElapsed(s.elapsedS)));
+    meta.appendChild(h.el('span', null, formatTokens(s.tokens) + ' ' + L.dashTokens));
+    if (s.estimatedPercent != null) {
+      meta.appendChild(h.el('span', null, s.estimatedPercent.toFixed(1) + '% (' + L.dashEstimated + ')'));
+    }
+    card.appendChild(meta);
+    // Pedido original: botao pausar/continuar so aparece quando a sessao NAO esta esperando o
+    // reset do limite (pausa GLOBAL do Governor -- nada que o botao por sessao resolveria).
+    if (s.status !== 'waiting_reset') {
+      var pausada = s.status === 'paused';
+      var btn = h.iconLabel('button', pausada ? 'play' : 'pause', pausada ? L.dashResume : L.dashPause);
+      btn.onclick = function () {
+        btn.disabled = true;
+        var rota = (pausada ? 'sessions-resume/' : 'sessions-pause/') + encodeURIComponent(s.sessionId);
+        h.api(ctx, 'POST', rota, {}).then(function () {
+          SCREENS.home(ctx, root, h);
+        }).catch(function () { btn.disabled = false; h.showToast(L.permStateFail, 'danger'); });
+      };
+      card.appendChild(btn);
+    }
+    return card;
+  }
+
+  // Rodada 5: a tela inicial vira um dashboard de uso/sessoes -- `GET dashboard` (Fase 3) ja
+  // agrega tudo numa chamada so (janelas de uso REAIS da conta + sessoes ativas com
+  // status/tempo/tokens/% estimado), o cliente so desenha.
   SCREENS.home = function (ctx, root, h) {
     var limpar = h.skeleton(root);
-    var restantes = 2;
-    function tick() { restantes -= 1; if (restantes <= 0) limpar(); }
-    h.api(ctx, 'GET', 'status').then(function (resp) {
-      var s = (resp && resp.status) || {};
-      root.appendChild(h.el('p', 'muted', s.state || '?'));
-      tick();
-    }).catch(function () { tick(); /* resumo e so um extra; a Home continua util sem ele */ });
-    // Fase 11 do redesign (Rodada 2): lista TODAS as decisoes pendentes, nao so a mais recente --
-    // `pending()` devolve `cards` (lista completa), um box por item, cada um levando pro card
-    // certo.
+    h.api(ctx, 'GET', 'dashboard').then(function (resp) {
+      limpar();
+      if (!resp || resp.ok !== true) { h.fallback(undefined, function () { SCREENS.home(ctx, root, h); }); return; }
+      var usage = resp.usage || {};
+      root.appendChild(dashUsageCard(h, L.dashFiveHour, usage.fiveHour));
+      root.appendChild(dashUsageCard(h, L.dashWeekly, usage.sevenDay));
+      var sessoes = resp.sessions || [];
+      if (!sessoes.length) { root.appendChild(h.el('p', 'muted', L.dashNoSessions)); return; }
+      sessoes.forEach(function (s) { root.appendChild(dashSessionCard(ctx, root, h, s)); });
+    }).catch(function () { limpar(); h.fallback(undefined, function () { SCREENS.home(ctx, root, h); }); });
+  };
+
+  // Fase 1 do redesign (plano pos-Arco-C): decisoes pendentes no Decision Inbox (GET pending —
+  // leitura, nunca decide nada). Rodada 5: era a Home; migrou pra aba propria "Acoes", agora
+  // agrupada por sessao (`sessionId` de cada card, ja existia e era ignorado) e com estado vazio
+  // ilustrado em vez de tela em branco quando nao ha nada pendente.
+  SCREENS.actions = function (ctx, root, h) {
+    var limpar = h.skeleton(root);
     h.api(ctx, 'GET', 'pending').then(function (resp) {
+      limpar();
       var cards = (resp && resp.cards) || [];
-      tick();
+      if (!cards.length) {
+        var vazio = h.el('div', 'empty-state');
+        var img = document.createElement('img');
+        img.src = 'empty.svg';
+        img.alt = '';
+        img.setAttribute('aria-hidden', 'true');
+        vazio.appendChild(img);
+        vazio.appendChild(h.el('p', 'muted', L.emptyActions));
+        root.appendChild(vazio);
+        return;
+      }
+      var porSessao = {}, ordem = [];
       cards.forEach(function (card) {
-        var box = document.createElement('div');
-        box.className = 'card';
-        box.appendChild(h.el('p', null, L.homePending));
-        var btn = document.createElement('button');
-        btn.textContent = L.homeResume + ' — ' + (L[card.kind] || card.kind);
-        btn.onclick = function () {
-          renderScreen({ api: ctx.api, who: ctx.who, screen: card.kind, card: card.id });
-        };
-        box.appendChild(btn);
-        root.appendChild(box);
+        var chave = card.sessionId || '';
+        if (!(chave in porSessao)) { porSessao[chave] = []; ordem.push(chave); }
+        porSessao[chave].push(card);
       });
-    }).catch(function () { tick(); /* sem pendencia detectavel: Home segue normal */ });
+      ordem.forEach(function (sessionId) {
+        if (sessionId) root.appendChild(h.el('p', 'muted', sessionId));
+        porSessao[sessionId].forEach(function (card) {
+          var box = h.el('div', 'card');
+          box.appendChild(h.el('p', null, L.homePending));
+          var btn = document.createElement('button');
+          btn.textContent = L.homeResume + ' — ' + (L[card.kind] || card.kind);
+          btn.onclick = function () {
+            renderScreen({ api: ctx.api, who: ctx.who, screen: card.kind, card: card.id });
+          };
+          box.appendChild(btn);
+          root.appendChild(box);
+        });
+      });
+    }).catch(function () { limpar(); h.fallback(undefined, function () { SCREENS.actions(ctx, root, h); }); });
   };
 
   // Fase 1 do redesign (plano pos-Arco-C): shell de navegacao. `home`/`status`/`config` sao as
   // telas "de navegacao" (mostram a barra de abas); `plan`/`question`/`permission` sao
   // contextuais (abertas so por um card especifico) e escondem a barra.
-  var NAV_SCREENS = ['home', 'status', 'config'];
-  var TABS = ['home', 'status', 'config'];
+  // Rodada 5: "home" virou o dashboard de uso/sessoes; "actions" (as decisoes pendentes que
+  // costumavam morar na Home) ganha aba propria.
+  var NAV_SCREENS = ['home', 'actions', 'status', 'config'];
+  var TABS = ['home', 'actions', 'status', 'config'];
   // Fase 8 do redesign (Rodada 2): icone por aba — status/config reaproveitam icones ja usados
   // em outro contexto (shield no titulo de permission, edit em "Modificar" plano); sempre
-  // acompanhados do rotulo (iconLabel), entao a reutilizacao nao gera ambiguidade.
-  var TAB_ICONS = { home: 'home', status: 'shield', config: 'gear' };
+  // acompanhados do rotulo (iconLabel), entao a reutilizacao nao gera ambiguidade. Rodada 5:
+  // "actions" reaproveita 'check' (mesma logica).
+  var TAB_ICONS = { home: 'home', actions: 'check', status: 'shield', config: 'gear' };
   var currentCtx = null;
 
   function renderTabs(activeScreen) {
