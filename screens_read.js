@@ -556,8 +556,8 @@
     }
   }
 
-  S.config = function (ctx, root, h) {
-    var onDone = function () { S.config(ctx, root, h); };
+  S.config = function (ctx, root, h, scrollY) {
+    var onDone = function () { S.config(ctx, root, h, window.scrollY); };
     var limpar = h.skeleton(root);
     h.api(ctx, 'GET', 'config').then(function (resp) {
       limpar();
@@ -607,6 +607,7 @@
         });
       };
       root.appendChild(undo);
+      if (scrollY != null) window.scrollTo(0, scrollY);
     }).catch(function () { limpar(); h.fallback(undefined, function () { S.config(ctx, root, h); }); });
   };
 
