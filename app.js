@@ -87,8 +87,10 @@
     back: [{ t: 'polyline', a: { points: '15,18 9,12 15,6' } }],
     play: [{ t: 'polygon', a: { points: '6,4 20,12 6,20', fill: 'currentColor', stroke: 'none' } }],
     // Silhueta de lapis (corpo afunilando até a ponta) preenchida, mesmo padrao do `play` --
-    // um contorno fino nao lia como lapis em 16px.
-    edit: [{ t: 'polygon', a: { points: '19.3,2.7 8.3,13.7 4,18 5.7,16.3 16.7,5.3',
+    // um contorno fino nao lia como lapis em 16px. Deslocamento perpendicular a linha
+    // eixo->ponta, nao paralelo a ela (a primeira versao tinha area liquida ZERO -- polygono
+    // auto-intersectante, por isso nao aparecia nada).
+    edit: [{ t: 'polygon', a: { points: '16.73,2.73 5.73,13.73 4,18 8.27,16.27 19.27,5.27',
                               fill: 'currentColor', stroke: 'none' } }],
     search: [{ t: 'circle', a: { cx: 10, cy: 10, r: 6 } },
              { t: 'line', a: { x1: 21, y1: 21, x2: 15, y2: 15 } }],
