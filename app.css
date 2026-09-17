@@ -45,11 +45,14 @@ button:active { transform: scale(.97); }
 #tabs { display: flex; gap: 8px; padding: 8px 16px max(8px, env(safe-area-inset-bottom));
   position: fixed; left: 0; right: 0; bottom: 0; background: var(--card);
   border-top: 1px solid var(--border); z-index: 10; }
+/* Sem `padding` proprio aqui, o `.tab` herdava os 12px do `button` generico (linha ~157) --
+   inflava o rodape bem alem do que `#screen` reserva no padding-bottom e escondia o final do
+   conteudo atras da barra. Padding compacto de barra de navegacao, nao de botao de acao. */
 #tabs .tab { width: auto; flex: 1; display: flex; flex-direction: column; align-items: center;
-  gap: 2px; background: transparent; color: var(--fg); border: 0; font-weight: 500;
-  font-size: var(--font-sm); }
+  gap: 2px; padding: 4px 2px; background: transparent; color: var(--fg); border: 0;
+  font-weight: 500; font-size: var(--font-sm); }
 #tabs .tab-active { color: var(--btn); }
-#screen { padding: 8px 16px calc(64px + env(safe-area-inset-bottom)); }
+#screen { padding: 8px 16px calc(76px + env(safe-area-inset-bottom)); }
 #foot { padding: 8px 16px max(16px, env(safe-area-inset-bottom)); }
 /* Fase 9 do redesign (Rodada 2): switch nativo pra config booleana -- `appearance:none` tira a
    caixa de selecao padrao do navegador, o resto e trilho + circulo deslizante via `::before`
