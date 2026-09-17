@@ -86,9 +86,10 @@
   var ICON_SHAPES = {
     back: [{ t: 'polyline', a: { points: '15,18 9,12 15,6' } }],
     play: [{ t: 'polygon', a: { points: '6,4 20,12 6,20', fill: 'currentColor', stroke: 'none' } }],
-    edit: [{ t: 'line', a: { x1: 4, y1: 20, x2: 16, y2: 8 } },
-           { t: 'line', a: { x1: 16, y1: 8, x2: 20, y2: 4 } },
-           { t: 'line', a: { x1: 13, y1: 11, x2: 17, y2: 15 } }],
+    // Silhueta de lapis (corpo afunilando até a ponta) preenchida, mesmo padrao do `play` --
+    // um contorno fino nao lia como lapis em 16px.
+    edit: [{ t: 'polygon', a: { points: '19.3,2.7 8.3,13.7 4,18 5.7,16.3 16.7,5.3',
+                              fill: 'currentColor', stroke: 'none' } }],
     search: [{ t: 'circle', a: { cx: 10, cy: 10, r: 6 } },
              { t: 'line', a: { x1: 21, y1: 21, x2: 15, y2: 15 } }],
     shield: [{ t: 'polygon', a: { points: '12,2 20,6 20,12 12,22 4,12 4,6' } }],
@@ -111,7 +112,18 @@
            { t: 'polyline', a: { points: '7,6 3,10 7,14' } }],
     // Fase 8 do redesign (Rodada 2): aba Home da barra de navegacao inferior.
     home: [{ t: 'polyline', a: { points: '4,11 12,4 20,11' } },
-           { t: 'rect', a: { x: 7, y: 11, width: 10, height: 9 } }]
+           { t: 'rect', a: { x: 7, y: 11, width: 10, height: 9 } }],
+    // Engrenagem: circulo externo + furo interno + 8 dentes radiais (45 graus entre si).
+    gear: [{ t: 'circle', a: { cx: 12, cy: 12, r: 6.5 } },
+           { t: 'circle', a: { cx: 12, cy: 12, r: 2.5 } },
+           { t: 'line', a: { x1: 18.5, y1: 12, x2: 20.8, y2: 12 } },
+           { t: 'line', a: { x1: 16.6, y1: 16.6, x2: 18.2, y2: 18.2 } },
+           { t: 'line', a: { x1: 12, y1: 18.5, x2: 12, y2: 20.8 } },
+           { t: 'line', a: { x1: 7.4, y1: 16.6, x2: 5.8, y2: 18.2 } },
+           { t: 'line', a: { x1: 5.5, y1: 12, x2: 3.2, y2: 12 } },
+           { t: 'line', a: { x1: 7.4, y1: 7.4, x2: 5.8, y2: 5.8 } },
+           { t: 'line', a: { x1: 12, y1: 5.5, x2: 12, y2: 3.2 } },
+           { t: 'line', a: { x1: 16.6, y1: 7.4, x2: 18.2, y2: 5.8 } }]
   };
   function icon(name) {
     var svg = svgEl('svg', { viewBox: '0 0 24 24', width: '16', height: '16', fill: 'none',
@@ -579,7 +591,7 @@
   // Fase 8 do redesign (Rodada 2): icone por aba — status/config reaproveitam icones ja usados
   // em outro contexto (shield no titulo de permission, edit em "Modificar" plano); sempre
   // acompanhados do rotulo (iconLabel), entao a reutilizacao nao gera ambiguidade.
-  var TAB_ICONS = { home: 'home', status: 'shield', config: 'edit' };
+  var TAB_ICONS = { home: 'home', status: 'shield', config: 'gear' };
   var currentCtx = null;
 
   function renderTabs(activeScreen) {
