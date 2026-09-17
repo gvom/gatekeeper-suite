@@ -755,14 +755,13 @@
     try { tg.expand(); } catch (e) { /* opcional */ }
     document.getElementById('loading').textContent = L.connecting;
     var ctx = parseHash();
-    if (!apiOk(ctx.api)) { showFallback(L.badApi + ' [hash=' + JSON.stringify(location.hash) + ']'); return; }
+    if (!apiOk(ctx.api)) { showFallback(L.badApi); return; }
     api(ctx, 'GET', 'whoami').then(function (who) {
       if (!who || who.ok !== true) throw new Error('whoami');
       if (who.protocol_version !== PROTOCOL_VERSION) { showFallback(L.proto); return; }
       // Cruzamento: o servidor diz qual host publico acredita ser. Divergencia = aborta.
       if (who.api_url && who.api_url.replace(/\/$/, '') !== ctx.api.replace(/\/$/, '')) {
-        showFallback(L.badApi + ' [who=' + JSON.stringify(who.api_url) + ' ctx=' + JSON.stringify(ctx.api) + ']');
-        return;
+        showFallback(L.badApi); return;
       }
       ctx.who = who;
       // Fase 1 do redesign: Menu Button abre sem #screen — a Home passa a ser o destino default
