@@ -280,6 +280,43 @@
     return chipsEls;
   }
 
+  // Rodada 6: liga/desliga backend individualmente -- mesmo componente visual da Fase 15
+  // (attachTiersChips), mas semantica invertida: o VALOR gravado e GATEKEEPER_BACKEND_DISABLED
+  // (csv dos DESATIVADOS), enquanto o chip mostra e alterna quem esta ATIVADO (mais intuitivo
+  // que mostrar "desativado" marcado). A tela calcula o complemento contra a allowlist fixa dos
+  // 8 backends conhecidos (BACKEND_CHAIN_CONHECIDOS, ja existia pra Fase 17) ao selecionar.
+  function attachBackendEnabledChips(item, t, h, pendencias, row) {
+    var desativados = (item.value || '').split(',').map(function (v) { return v.trim(); }).filter(Boolean);
+    var ativados = BACKEND_CHAIN_CONHECIDOS.filter(function (nome) { return desativados.indexOf(nome) === -1; });
+    var wrap = document.createElement('div');
+    wrap.className = 'chip-group row-control';
+    var chipsEls = [];
+    BACKEND_CHAIN_CONHECIDOS.forEach(function (nome) {
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'tier-chip';
+      chip.textContent = nome;
+      chip.disabled = true;  // Fase 13 do redesign (Rodada 3): card nasce travado.
+      var marcaSelecionado = function () {
+        var marcado = ativados.indexOf(nome) !== -1;
+        chip.setAttribute('aria-pressed', marcado ? 'true' : 'false');
+        chip.classList.toggle('selected', marcado);
+      };
+      marcaSelecionado();
+      chip.onclick = function () {
+        var pos = ativados.indexOf(nome);
+        if (pos !== -1) { ativados.splice(pos, 1); } else { ativados.push(nome); }
+        marcaSelecionado();
+        var novosDesativados = BACKEND_CHAIN_CONHECIDOS.filter(function (n) { return ativados.indexOf(n) === -1; });
+        pendencias[item.key] = novosDesativados.join(',');
+      };
+      wrap.appendChild(chip);
+      chipsEls.push(chip);
+    });
+    row.appendChild(wrap);
+    return chipsEls;
+  }
+
   // Fase 17 do redesign (Rodada 3): controle de GATEKEEPER_BACKEND_CHAIN -- reordenar/adicionar/
   // remover, nunca digitar texto livre (elimina o typo silencioso que motivou manter esta chave
   // travada ate aqui; reforcado tambem no validate() do servidor, Task 1). Numero de linhas muda
@@ -378,6 +415,7 @@
     // registry (nao e um enum de valor unico), valor gravado como CSV.
     if (item.key === 'GATEKEEPER_SMART_REVIEW_TIERS') return attachTiersChips(item, t, h, pendencias, row);
     if (item.key === 'GATEKEEPER_BACKEND_CHAIN') return attachBackendChainEditor(item, pendencias, t, h, row);
+    if (item.key === 'GATEKEEPER_BACKEND_DISABLED') return attachBackendEnabledChips(item, t, h, pendencias, row);
     if (item.kind === 'bool') {
       // Fase 9 do redesign (Rodada 2): switch nativo no lugar do botao on/off -- o proprio
       // controle ja demonstra o estado (marcado/desmarcado), sem precisar de texto ao lado.
