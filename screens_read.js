@@ -286,6 +286,9 @@
   // que mostrar "desativado" marcado). A tela calcula o complemento contra a allowlist fixa dos
   // 8 backends conhecidos (BACKEND_CHAIN_CONHECIDOS, ja existia pra Fase 17) ao selecionar.
   function attachBackendEnabledChips(item, t, h, pendencias, row) {
+    // Achado ao vivo: cor sozinha (selecionado x nao-selecionado) nao deixava claro qual sentido
+    // era "ativo" -- ambiguo sem contexto de cor. Cada chip agora leva um icone (check/x) alem
+    // da cor, sem depender so da cor pra comunicar o estado.
     var desativados = (item.value || '').split(',').map(function (v) { return v.trim(); }).filter(Boolean);
     var ativados = BACKEND_CHAIN_CONHECIDOS.filter(function (nome) { return desativados.indexOf(nome) === -1; });
     var wrap = document.createElement('div');
@@ -295,12 +298,14 @@
       var chip = document.createElement('button');
       chip.type = 'button';
       chip.className = 'tier-chip';
-      chip.textContent = nome;
       chip.disabled = true;  // Fase 13 do redesign (Rodada 3): card nasce travado.
       var marcaSelecionado = function () {
         var marcado = ativados.indexOf(nome) !== -1;
         chip.setAttribute('aria-pressed', marcado ? 'true' : 'false');
         chip.classList.toggle('selected', marcado);
+        h.clear(chip);
+        chip.appendChild(h.icon(marcado ? 'check' : 'x'));
+        chip.appendChild(document.createTextNode(' ' + nome));
       };
       marcaSelecionado();
       chip.onclick = function () {
