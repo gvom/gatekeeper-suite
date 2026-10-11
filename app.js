@@ -15,59 +15,59 @@
           home: 'Início', preparing: 'Tela em preparação — use o chat.',
           proto: 'Versão do app e do servidor não batem. Atualize.',
           status: 'Status', config: 'Configuração', plan: 'Plano', question: 'Pergunta', permission: 'Permissão',
-          homePending: 'Você tem uma decisão pendente:', homeResume: 'Continuar', back: 'Voltar',
+          back: 'Voltar',
           qUnavailable: 'Pergunta indisponível — responda pelo chat.', qAnswered: 'Esta pergunta já foi respondida.',
           qSend: 'Enviar resposta', qAnswerAll: 'Responda todas as perguntas.',
           qAlreadyChat: 'Já respondida pelo chat.', qSendFail: 'Não foi possível enviar (HTTP ',
-          planChanged: 'O plano mudou desde que a pergunta foi feita. Decida pelo chat.',
-          planFeedback: 'O que deve mudar? (para Modificar)', planWriteWhat: 'Escreva o que deve mudar.',
-          planConfirm: 'Confirmar:', planAlreadyChat: 'Já decidido pelo chat.',
-          planExecute: 'Executar', planModify: 'Modificar', planAutoReview: 'Auto revisar',
-          planJumpToDecision: 'Ir para a decisão',
+          planConfirm: 'Confirmar:',
           permUnavailable: 'Pedido indisponível — decida pelo chat.', permAnswered: 'Este pedido já foi decidido.',
-          permTitle: 'Guardian pede confirmação', permTool: 'Ferramenta: ', permTier: ' · risco: ',
-          permReason: 'Motivo: ', permAllow: 'Allow', permDeny: 'Deny', permLocal: 'Local',
+          permAllow: 'Permitir',
           permAlreadyChat: 'Já decidido pelo chat.',
           permAutoOn: 'Ativar automático', permAutoOff: 'Desligar automático',
           permFloorUp: 'Subir piso', permFloorDown: 'Descer piso', permFloorNow: 'Piso atual: ',
           permApplying: 'Aplicando…',
           permStateFail: 'Não foi possível aplicar agora — tente de novo.', retry: 'Tentar de novo',
-          permFeedback: 'Anotação (opcional)',
           actions: 'Ações', emptyActions: 'Nada pendente por aqui agora.',
-          dashFiveHour: '5 horas', dashWeekly: 'Semanal', dashResetsAt: 'Reinicia em ',
-          dashNoUsage: 'Sem dados de uso agora.', dashNoSessions: 'Nenhuma sessão ativa agora.',
-          dashTokens: 'tokens', dashEstimated: 'estimado', dashPause: 'Pausar',
-          dashResume: 'Continuar', dashRunning: 'Executando', dashPaused: 'Pausada',
-          dashWaitingReset: 'Esperando reset' },
+          newSession: 'Nova sessão',
+          kindPermission: 'Permissão', kindQuestion: 'Pergunta', kindPlan: 'Plano',
+          kindPermissionSub: 'Uma ferramenta espera sua autorização',
+          kindQuestionSub: 'O Claude precisa de uma escolha sua',
+          kindPlanSub: 'Um plano aguarda sua aprovação',
+          openDecision: 'Abrir', sessionUnknown: 'Sessão',
+          permRequest: 'Pedido de permissão', permRisk: 'Risco ',
+          permWithNote: 'Permitir com nota…', permDenyNow: 'Negar',
+          permDenyNote: 'Negar com motivo…', permTerminal: 'Decidir no terminal',
+          permNoteFor: 'Nota para ', send: 'Enviar', backToMenu: 'Voltar',
+          moreOptions: 'Mais opções' },
     en: { connecting: 'Connecting…', offline: 'Backend unavailable — answer in chat.',
           close: 'Close', badApi: 'Invalid API address.', notTelegram: 'Open from Telegram.',
           home: 'Home', preparing: 'Screen in preparation — use chat.',
           proto: 'App and server versions differ. Update.',
           status: 'Status', config: 'Settings', plan: 'Plan', question: 'Question', permission: 'Permission',
-          homePending: 'You have a pending decision:', homeResume: 'Continue', back: 'Back',
+          back: 'Back',
           qUnavailable: 'Question unavailable — answer in chat.', qAnswered: 'This question was already answered.',
           qSend: 'Send answer', qAnswerAll: 'Answer every question.',
           qAlreadyChat: 'Already answered in chat.', qSendFail: 'Could not send (HTTP ',
-          planChanged: 'The plan changed since the question was asked. Decide in chat.',
-          planFeedback: 'What should change? (for Modify)', planWriteWhat: 'Write what should change.',
-          planConfirm: 'Confirm:', planAlreadyChat: 'Already decided in chat.',
-          planExecute: 'Execute', planModify: 'Modify', planAutoReview: 'Auto review',
-          planJumpToDecision: 'Jump to decision',
+          planConfirm: 'Confirm:',
           permUnavailable: 'Request unavailable — decide in chat.', permAnswered: 'This request was already decided.',
-          permTitle: 'Guardian asks for confirmation', permTool: 'Tool: ', permTier: ' · risk: ',
-          permReason: 'Reason: ', permAllow: 'Allow', permDeny: 'Deny', permLocal: 'Local',
+          permAllow: 'Allow',
           permAlreadyChat: 'Already decided in chat.',
           permAutoOn: 'Turn autonomous on', permAutoOff: 'Turn autonomous off',
           permFloorUp: 'Raise floor', permFloorDown: 'Lower floor', permFloorNow: 'Current floor: ',
           permApplying: 'Applying…',
           permStateFail: 'Could not apply now — try again.', retry: 'Try again',
-          permFeedback: 'Note (optional)',
           actions: 'Actions', emptyActions: 'Nothing pending here right now.',
-          dashFiveHour: '5 hours', dashWeekly: 'Weekly', dashResetsAt: 'Resets at ',
-          dashNoUsage: 'No usage data right now.', dashNoSessions: 'No active sessions right now.',
-          dashTokens: 'tokens', dashEstimated: 'estimated', dashPause: 'Pause',
-          dashResume: 'Continue', dashRunning: 'Running', dashPaused: 'Paused',
-          dashWaitingReset: 'Waiting for reset' }
+          newSession: 'New session',
+          kindPermission: 'Permission', kindQuestion: 'Question', kindPlan: 'Plan',
+          kindPermissionSub: 'A tool is waiting for your authorization',
+          kindQuestionSub: 'Claude needs a choice from you',
+          kindPlanSub: 'A plan is waiting for your approval',
+          openDecision: 'Open', sessionUnknown: 'Session',
+          permRequest: 'Permission request', permRisk: 'Risk ',
+          permWithNote: 'Allow with a note…', permDenyNow: 'Deny',
+          permDenyNote: 'Deny with a reason…', permTerminal: 'Decide in the terminal',
+          permNoteFor: 'Note for ', send: 'Send', backToMenu: 'Back',
+          moreOptions: 'More options' }
   };
 
   function lang() {
@@ -140,7 +140,15 @@
            { t: 'line', a: { x1: 16.6, y1: 7.4, x2: 18.2, y2: 5.8 } }],
     // Rodada 5 (dashboard): duas barras verticais preenchidas -- botao Pausar por sessao.
     pause: [{ t: 'rect', a: { x: 6, y: 4, width: 4, height: 16, fill: 'currentColor', stroke: 'none' } },
-            { t: 'rect', a: { x: 14, y: 4, width: 4, height: 16, fill: 'currentColor', stroke: 'none' } }]
+            { t: 'rect', a: { x: 14, y: 4, width: 4, height: 16, fill: 'currentColor', stroke: 'none' } }],
+    // Rodada 10: sessão nova (+), live (olho), link entre sessões (dois elos), menu (caret).
+    plus: [{ t: 'line', a: { x1: 12, y1: 5, x2: 12, y2: 19 } },
+           { t: 'line', a: { x1: 5, y1: 12, x2: 19, y2: 12 } }],
+    eye: [{ t: 'path', a: { d: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z' } },
+          { t: 'circle', a: { cx: 12, cy: 12, r: 3 } }],
+    link: [{ t: 'rect', a: { x: 3, y: 9, width: 9, height: 6, rx: 3 } },
+           { t: 'rect', a: { x: 12, y: 9, width: 9, height: 6, rx: 3 } }],
+    'chevron-down': [{ t: 'polyline', a: { points: '6,9 12,15 18,9' } }]
   };
   function icon(name) {
     var svg = svgEl('svg', { viewBox: '0 0 24 24', width: '16', height: '16', fill: 'none',
@@ -155,25 +163,6 @@
     n.appendChild(icon(name));
     n.appendChild(document.createTextNode(' ' + texto));
     return n;
-  }
-
-  // Rodada 5 (dashboard): formatadores de exibicao, sem lib externa.
-  function formatElapsed(s) {
-    if (s == null) return '';
-    s = Math.max(0, Math.floor(s));
-    var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
-    return h > 0 ? (h + 'h ' + m + 'min') : (m + 'min');
-  }
-  function formatTokens(n) {
-    n = Number(n) || 0;
-    return n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n);
-  }
-  function formatResetAt(iso) {
-    if (!iso) return '';
-    var d = new Date(iso);
-    if (isNaN(d.getTime())) return '';
-    return d.toLocaleString(lang() === 'pt' ? 'pt-BR' : 'en-US',
-      { dateStyle: 'short', timeStyle: 'short' });
   }
 
   // Fase 3 do redesign: esqueleto de carregamento — substitui a tela em branco entre abrir e o
@@ -214,7 +203,7 @@
   }
 
   function parseHash() {
-    var out = { screen: '', card: '', api: '' };
+    var out = { screen: '', card: '', api: '', session: '' };
     var raw = (location.hash || '').replace(/^#/, '');
     raw.split('&').forEach(function (kv) {
       var i = kv.indexOf('=');
@@ -266,40 +255,6 @@
     var b = document.getElementById('badge'); b.textContent = text || ''; b.hidden = !text;
   }
 
-  // Render de markdown MINIMO e seguro: paragrafos, titulos (#), listas (-/*) e blocos ```.
-  // Tudo via textContent/createElement — nunca monta HTML por string: o plano e texto do dono,
-  // mas passa por um webview publico e a CSP nao tem unsafe-inline.
-  function renderMarkdownInto(root, text) {
-    var lines = String(text || '').split(/\r?\n/);
-    var pre = null;
-    var list = null;
-    lines.forEach(function (line) {
-      if (line.indexOf('```') === 0) {
-        if (pre) { root.appendChild(pre); pre = null; }
-        else { list = null; pre = document.createElement('pre'); }
-        return;
-      }
-      if (pre) { pre.textContent += line + '\n'; return; }
-      var titulo = /^(#{1,6})\s+(.*)$/.exec(line);
-      if (titulo) {
-        list = null;
-        var elTitulo = document.createElement('h' + Math.min(6, titulo[1].length + 1));
-        elTitulo.textContent = titulo[2]; root.appendChild(elTitulo);
-        return;
-      }
-      var item = /^\s*[-*]\s+(.*)$/.exec(line);
-      if (item) {
-        if (!list) { list = document.createElement('ul'); root.appendChild(list); }
-        var li = document.createElement('li'); li.textContent = item[1]; list.appendChild(li);
-        return;
-      }
-      list = null;
-      if (line.trim() === '') return;
-      var p = document.createElement('p'); p.textContent = line; root.appendChild(p);
-    });
-    if (pre) root.appendChild(pre);
-  }
-
   // Registro de telas: plano 01 Task 10 preenche status/config; plano 02 preenche plan/question/permission.
   //
   // Fase 4 do redesign: regra fixada pra qualquer tela nova nao misturar por acidente —
@@ -321,73 +276,6 @@
     a.onclick = function () { renderScreen({ api: ctx.api, who: ctx.who, screen: 'home', card: '' }); };
     return a;
   }
-
-  // Fase 5 (Task 4): leitura integral do plano. `window.__planCurrent` guarda o ultimo payload
-  // para a Fase 6c (Task 13) acrescentar os botoes de decisao sem refazer o fetch.
-  SCREENS.plan = function (ctx, root, h) {
-    root.appendChild(backLink(ctx));
-    var limpar = h.skeleton(root);
-    h.api(ctx, 'GET', 'plan/current').then(function (json) {
-      limpar();
-      var meta = h.el('p', 'meta', 'Rodada ' + json.round + ' · hash ' +
-        String(json.hash).slice(0, 12) + ' · ' + json.plan.length + ' caracteres');
-      root.appendChild(meta);
-      var body = document.createElement('article');
-      renderMarkdownInto(body, json.plan);
-      root.appendChild(body);
-      window.__planCurrent = json;
-      // Fase 6c (Task 13): botoes de decisao quando o link veio de um card `kind=plan` aberto.
-      if (ctx.card) {
-        h.api(ctx, 'GET', 'cards/' + encodeURIComponent(ctx.card)).then(function (c) {
-          if (c.state !== 'open' || c.kind !== 'plan') return;
-          if (c.payload && c.payload.hash && c.payload.hash !== json.hash) {
-            root.appendChild(h.el('p', 'warn', L.planChanged));
-            return;
-          }
-          var bar = document.createElement('div');
-          bar.className = 'actions';
-          bar.id = 'plan-decision-bar';
-          // Fase 4 do redesign: plano longo empurra a decisao pra baixo do scroll — um atalho
-          // logo apos os metadados rola ate a barra sem precisar descer manualmente.
-          if (String(json.plan || '').length > 1500) {
-            var jump = iconLabel('button', 'arrow-down', L.planJumpToDecision);
-            jump.className = 'btn-neutral';
-            jump.onclick = function () { bar.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
-            root.insertBefore(jump, body);
-          }
-          var feedback = document.createElement('textarea');
-          feedback.placeholder = L.planFeedback;
-          feedback.maxLength = 4000;
-          var send = function (value) {
-            if (value === 'modify' && !feedback.value.trim()) { showToast(L.planWriteWhat, 'warning'); return; }
-            new Promise(function (res) { tg.showConfirm(L.planConfirm + ' ' + value + '?', res); })
-              .then(function (ok) {
-                if (!ok) return;
-                h.api(ctx, 'POST', 'cards-answer/' + encodeURIComponent(ctx.card),
-                      { value: value, feedback: feedback.value })
-                  .then(function () { tg.HapticFeedback.notificationOccurred('success'); tg.close(); })
-                  .catch(function (erro) {
-                    var status = String((erro && erro.message) || '').replace('http_', '');
-                    if (status === '409') showToast(L.planAlreadyChat, 'danger');
-                    else showToast(L.qSendFail + status + ').', 'danger');
-                  });
-              });
-          };
-          var planClasses = { execute: 'btn-success', modify: 'btn-neutral', auto_review: 'btn-neutral' };
-          var planIcons = { execute: 'play', modify: 'edit', auto_review: 'search' };
-          (c.options || []).forEach(function (opt) {
-            var texto = opt === 'execute' ? L.planExecute : opt === 'modify' ? L.planModify : L.planAutoReview;
-            var b = iconLabel('button', planIcons[opt] || 'play', texto);
-            b.className = planClasses[opt] || 'btn-neutral';
-            b.onclick = function () { send(opt); };
-            bar.appendChild(b);
-          });
-          root.appendChild(feedback);
-          root.appendChild(bar);
-        }).catch(function () { /* sem card acessivel: tela fica so leitura, como na Task 4 */ });
-      }
-    }).catch(function () { limpar(); h.fallback(undefined, function () { renderScreen(ctx); }); });
-  };
 
   // Fase 6b (Task 11): formulario da pergunta, respondido pela Mini App. `ctx.card` vem do
   // fragmento (#screen=question&card=<id>), ja decodificado por `parseHash`.
@@ -478,7 +366,121 @@
   // Fase 6d (Task 15): decisao de permissao (allow/deny/local) via card `kind=permission`.
   // `payload.text`/`.tool`/`.tier`/`.reason` sao dados do dono (o comando que ele mesmo digitou,
   // redigido pelo servidor); vao para o DOM so via `h.el`/`textContent` (linha 56), nunca por
-  // montagem de HTML em string — mesma regra ja usada em `renderMarkdownInto` e nas telas plan/question.
+  // montagem de HTML em string — mesma regra ja usada em screens_plan.js e na tela question.
+  // Rodada 10 (plannotator, PermissionCard): rótulo, ferramenta e risco como chips, motivo em
+  // texto corrido e o comando em monoespaçado quebrável.
+  function permissionHeader(h, payload) {
+    var card = h.el('section', 'perm-card');
+    card.appendChild(iconLabel('p', 'alert-triangle', L.permRequest)).className = 'perm-label';
+    var chips = h.el('div', 'perm-chips');
+    chips.appendChild(h.el('span', 'perm-chip', payload.tool || '?'));
+    var risco = String(payload.tier || '');
+    chips.appendChild(h.el('span', 'perm-chip perm-risk-' + risco, L.permRisk + risco));
+    card.appendChild(chips);
+    if (payload.reason) card.appendChild(h.el('p', 'perm-reason', payload.reason));
+    card.appendChild(h.el('pre', 'perm-command', payload.text || ''));
+    return card;
+  }
+
+  // Rodada 10 (plannotator, DecisionControl): ação primária à esquerda + seta que abre um menu;
+  // escolher "com nota" transforma o MESMO elemento no compositor da nota. `itens` =
+  // [{code, label, note, tone}]; `enviar(code, nota)` devolve Promise.
+  function decisionControl(h, primario, itens, enviar) {
+    var caixa = h.el('div', 'decision');
+    var linha = h.el('div', 'decision-split');
+    var principal = iconLabel('button', 'check', primario.label);
+    principal.type = 'button';
+    principal.className = 'decision-primary tone-' + (primario.tone || 'success');
+    var seta = document.createElement('button');
+    seta.type = 'button';
+    seta.className = 'decision-caret tone-' + (primario.tone || 'success');
+    seta.setAttribute('aria-label', L.moreOptions);
+    seta.appendChild(icon('chevron-down'));
+    linha.appendChild(principal);
+    linha.appendChild(seta);
+    caixa.appendChild(linha);
+    var painel = h.el('div', 'decision-panel');
+    painel.hidden = true;
+    caixa.appendChild(painel);
+    principal.onclick = function () { enviar(primario.code, ''); };
+    seta.onclick = function () { painel.hidden = !painel.hidden; if (!painel.hidden) decisionMenu(h, painel, itens, enviar); };
+    return caixa;
+  }
+
+  function decisionMenu(h, painel, itens, enviar) {
+    clear(painel);
+    itens.forEach(function (item) {
+      var b = h.el('button', 'decision-item tone-text-' + (item.tone || 'neutral'));
+      b.type = 'button';
+      b.appendChild(h.el('span', 'decision-item-label', item.label));
+      if (item.sub) b.appendChild(h.el('span', 'decision-item-sub', item.sub));
+      b.onclick = function () {
+        if (item.note) decisionComposer(h, painel, itens, item, enviar);
+        else enviar(item.code, '');
+      };
+      painel.appendChild(b);
+    });
+  }
+
+  // O compositor ocupa o lugar do menu. Nota vazia não envia: devolve o foco ao campo.
+  function decisionComposer(h, painel, itens, item, enviar) {
+    clear(painel);
+    painel.appendChild(h.el('p', 'decision-composer-title', L.permNoteFor + item.label.replace('…', '')));
+    var nota = document.createElement('textarea');
+    nota.maxLength = 4000;
+    nota.rows = 3;
+    painel.appendChild(nota);
+    var barra = h.el('div', 'decision-composer-actions');
+    var voltar = h.el('button', 'btn-secondary', L.backToMenu);
+    voltar.type = 'button';
+    voltar.onclick = function () { decisionMenu(h, painel, itens, enviar); };
+    var ir = h.el('button', 'btn-primary', L.send);
+    ir.type = 'button';
+    ir.onclick = function () {
+      if (!nota.value.trim()) { nota.focus(); return; }
+      enviar(item.code, nota.value);
+    };
+    barra.appendChild(voltar);
+    barra.appendChild(ir);
+    painel.appendChild(barra);
+    nota.focus();
+  }
+
+  // Decisão sem nota pede confirmação (toque acidental custa caro); com nota, o compositor já é
+  // o gesto deliberado. A resposta segue pelo mesmo CAS do chat (`cards-answer`).
+  function permissionSend(ctx, cardId, rotulos) {
+    return function enviar(code, nota) {
+      var pronto = nota ? Promise.resolve(true) : new Promise(function (res) {
+        tg.showConfirm(L.planConfirm + ' ' + rotulos[code] + '?', res);
+      });
+      return pronto.then(function (ok) {
+        if (!ok) return;
+        return api(ctx, 'POST', 'cards-answer/' + encodeURIComponent(cardId), { decision: code, feedback: nota })
+          .then(function () { tg.HapticFeedback.notificationOccurred('success'); tg.close(); })
+          .catch(function (erro) {
+            var status = String((erro && erro.message) || '').replace('http_', '');
+            showToast(status === '409' ? L.permAlreadyChat : L.qSendFail + status + ').', 'danger');
+          });
+      });
+    };
+  }
+
+  // Componentes compartilhados com screens_plan.js (mesmo controle de decisão nas duas telas).
+  window.GK_UI = { decisionControl: decisionControl, backLink: backLink, api: api,
+                   showToast: showToast, renderScreen: function (c) { renderScreen(c); } };
+
+  function permissionDecision(ctx, h, cardId, opcoes) {
+    var rotulos = { a: L.permAllow, d: L.permDenyNow, l: L.permTerminal };
+    var enviar = permissionSend(ctx, cardId, rotulos);
+    var tem = function (c) { return opcoes.indexOf(c) >= 0; };
+    var itens = [];
+    if (tem('a')) itens.push({ code: 'a', label: L.permWithNote, note: true, tone: 'success' });
+    if (tem('d')) itens.push({ code: 'd', label: L.permDenyNow, tone: 'danger' });
+    if (tem('d')) itens.push({ code: 'd', label: L.permDenyNote, note: true, tone: 'danger' });
+    if (tem('l')) itens.push({ code: 'l', label: L.permTerminal, tone: 'neutral' });
+    return decisionControl(h, { code: 'a', label: L.permAllow, tone: 'success' }, itens, enviar);
+  }
+
   SCREENS.permission = function (ctx, root, h) {
     root.appendChild(backLink(ctx));
     var cardId = ctx.card || '';
@@ -488,41 +490,8 @@
       if (json.kind !== 'permission') { root.appendChild(h.el('p', 'err', L.permUnavailable)); return; }
       if (json.state !== 'open') { root.appendChild(h.el('p', 'muted', L.permAnswered)); return; }
       var payload = json.payload || {};
-      root.appendChild(iconLabel('h1', 'shield', L.permTitle));
-      root.appendChild(h.el('p', 'meta', L.permTool + payload.tool + L.permTier + payload.tier));
-      root.appendChild(h.el('p', null, L.permReason + (payload.reason || '')));
-      root.appendChild(h.el('pre', null, payload.text || ''));
-      // Fase 12 do redesign (Rodada 2): anotacao de texto livre opcional, mesmo padrao do
-      // feedback de plan -- nunca obrigatoria, acompanha a decisao seja qual for o codigo.
-      var feedback = document.createElement('textarea');
-      feedback.placeholder = L.permFeedback;
-      feedback.maxLength = 4000;
-      root.appendChild(feedback);
-      var bar = document.createElement('div');
-      bar.className = 'actions';
-      var labels = { a: L.permAllow, d: L.permDeny, l: L.permLocal };
-      var permClasses = { a: 'btn-success', d: 'btn-danger', l: 'btn-neutral' };
-      var permIcons = { a: 'check', d: 'x', l: 'help-circle' };
-      (json.options || []).forEach(function (code) {
-        var b = iconLabel('button', permIcons[code] || 'help-circle', labels[code] || code);
-        b.className = permClasses[code] || 'btn-neutral';
-        b.onclick = function () {
-          new Promise(function (res) { tg.showConfirm(L.planConfirm + ' ' + (labels[code] || code) + '?', res); })
-            .then(function (ok) {
-              if (!ok) return;
-              h.api(ctx, 'POST', 'cards-answer/' + encodeURIComponent(cardId),
-                    { decision: code, feedback: feedback.value })
-                .then(function () { tg.HapticFeedback.notificationOccurred('success'); tg.close(); })
-                .catch(function (erro) {
-                  var status = String((erro && erro.message) || '').replace('http_', '');
-                  if (status === '409') showToast(L.permAlreadyChat, 'danger');
-                  else showToast(L.qSendFail + status + ').', 'danger');
-                });
-            });
-        };
-        bar.appendChild(b);
-      });
-      root.appendChild(bar);
+      root.appendChild(permissionHeader(h, payload));
+      root.appendChild(permissionDecision(ctx, h, cardId, json.options || []));
 
       // Fase 2 do redesign de UX: paridade do modo autonomo (A/U/B/C do chat). Nao decide nada
       // (POST cards-action/<id>, canal separado do CAS acima) — so ativa/desliga o modo ou move
@@ -584,81 +553,33 @@
     }).catch(function () { limpar(); h.fallback(undefined, function () { renderScreen(ctx); }); });
   };
 
-  var DASH_STATUS_LABELS = { running: 'dashRunning', paused: 'dashPaused',
-                            waiting_reset: 'dashWaitingReset' };
-
-  function dashUsageCard(h, titulo, janela) {
-    var card = h.el('div', 'card');
-    card.appendChild(h.el('p', null, titulo));
-    if (!janela || janela.utilization == null) {
-      card.appendChild(h.el('p', 'muted', L.dashNoUsage));
-      return card;
-    }
-    var pct = Math.max(0, Math.min(100, Number(janela.utilization) || 0));
-    var trilha = h.el('div', 'usage-bar');
-    var preenchido = h.el('div', 'usage-bar-fill');
-    preenchido.style.width = pct + '%';
-    preenchido.style.background = pct >= 90 ? 'var(--danger)' : (pct >= 70 ? 'var(--warning)' : 'var(--success)');
-    trilha.appendChild(preenchido);
-    card.appendChild(trilha);
-    var legenda = pct.toFixed(0) + '%' +
-      (janela.resetsAt ? ' · ' + L.dashResetsAt + formatResetAt(janela.resetsAt) : '');
-    card.appendChild(h.el('p', 'muted', legenda));
-    return card;
-  }
-
-  function dashSessionCard(ctx, root, h, s) {
-    var card = h.el('div', 'card');
-    var head = h.el('div', 'session-card-head');
-    head.appendChild(h.el('span', 'session-card-goal', s.goal || s.sessionId));
-    head.appendChild(h.el('span', 'status-pill status-pill-' + s.status,
-      L[DASH_STATUS_LABELS[s.status]] || s.status));
-    card.appendChild(head);
-    var meta = h.el('div', 'session-meta');
-    if (s.elapsedS != null) meta.appendChild(h.el('span', null, formatElapsed(s.elapsedS)));
-    meta.appendChild(h.el('span', null, formatTokens(s.tokens) + ' ' + L.dashTokens));
-    if (s.estimatedPercent != null) {
-      meta.appendChild(h.el('span', null, s.estimatedPercent.toFixed(1) + '% (' + L.dashEstimated + ')'));
-    }
-    card.appendChild(meta);
-    // Pedido original: botao pausar/continuar so aparece quando a sessao NAO esta esperando o
-    // reset do limite (pausa GLOBAL do Governor -- nada que o botao por sessao resolveria).
-    if (s.status !== 'waiting_reset') {
-      var pausada = s.status === 'paused';
-      var btn = h.iconLabel('button', pausada ? 'play' : 'pause', pausada ? L.dashResume : L.dashPause);
-      btn.onclick = function () {
-        btn.disabled = true;
-        var rota = (pausada ? 'sessions-resume/' : 'sessions-pause/') + encodeURIComponent(s.sessionId);
-        h.api(ctx, 'POST', rota, {}).then(function () {
-          SCREENS.home(ctx, root, h);
-        }).catch(function () { btn.disabled = false; h.showToast(L.permStateFail, 'danger'); });
-      };
-      card.appendChild(btn);
-    }
-    return card;
-  }
-
-  // Rodada 5: a tela inicial vira um dashboard de uso/sessoes -- `GET dashboard` (Fase 3) ja
-  // agrega tudo numa chamada so (janelas de uso REAIS da conta + sessoes ativas com
-  // status/tempo/tokens/% estimado), o cliente so desenha.
-  SCREENS.home = function (ctx, root, h) {
-    var limpar = h.skeleton(root);
-    h.api(ctx, 'GET', 'dashboard').then(function (resp) {
-      limpar();
-      if (!resp || resp.ok !== true) { h.fallback(undefined, function () { SCREENS.home(ctx, root, h); }); return; }
-      var usage = resp.usage || {};
-      root.appendChild(dashUsageCard(h, L.dashFiveHour, usage.fiveHour));
-      root.appendChild(dashUsageCard(h, L.dashWeekly, usage.sevenDay));
-      var sessoes = resp.sessions || [];
-      if (!sessoes.length) { root.appendChild(h.el('p', 'muted', L.dashNoSessions)); return; }
-      sessoes.forEach(function (s) { root.appendChild(dashSessionCard(ctx, root, h, s)); });
-    }).catch(function () { limpar(); h.fallback(undefined, function () { SCREENS.home(ctx, root, h); }); });
-  };
 
   // Fase 1 do redesign (plano pos-Arco-C): decisoes pendentes no Decision Inbox (GET pending —
   // leitura, nunca decide nada). Rodada 5: era a Home; migrou pra aba propria "Acoes", agora
   // agrupada por sessao (`sessionId` de cada card, ja existia e era ignorado) e com estado vazio
   // ilustrado em vez de tela em branco quando nao ha nada pendente.
+  var KIND_META = {
+    permission: { icon: 'shield', title: 'kindPermission', sub: 'kindPermissionSub' },
+    question: { icon: 'help-circle', title: 'kindQuestion', sub: 'kindQuestionSub' },
+    plan: { icon: 'edit', title: 'kindPlan', sub: 'kindPlanSub' }
+  };
+
+  function actionCard(ctx, h, card) {
+    var meta = KIND_META[card.kind] || { icon: 'alert-triangle', title: card.kind, sub: '' };
+    var box = h.el('button', 'action-card action-card-' + card.kind);
+    box.type = 'button';
+    var marca = h.el('span', 'action-icon');
+    marca.appendChild(h.icon(meta.icon));
+    box.appendChild(marca);
+    var textos = h.el('span', 'action-texts');
+    textos.appendChild(h.el('span', 'action-title', L[meta.title] || meta.title));
+    if (meta.sub) textos.appendChild(h.el('span', 'action-sub', L[meta.sub]));
+    box.appendChild(textos);
+    box.appendChild(h.el('span', 'action-open', L.openDecision));
+    box.onclick = function () { renderScreen({ api: ctx.api, who: ctx.who, screen: card.kind, card: card.id }); };
+    return box;
+  }
+
   SCREENS.actions = function (ctx, root, h) {
     var limpar = h.skeleton(root);
     h.api(ctx, 'GET', 'pending').then(function (resp) {
@@ -681,18 +602,16 @@
         if (!(chave in porSessao)) { porSessao[chave] = []; ordem.push(chave); }
         porSessao[chave].push(card);
       });
-      ordem.forEach(function (sessionId) {
-        if (sessionId) root.appendChild(h.el('p', 'muted', sessionId));
-        porSessao[sessionId].forEach(function (card) {
-          var box = h.el('div', 'card');
-          box.appendChild(h.el('p', null, L.homePending));
-          var btn = document.createElement('button');
-          btn.textContent = L.homeResume + ' — ' + (L[card.kind] || card.kind);
-          btn.onclick = function () {
-            renderScreen({ api: ctx.api, who: ctx.who, screen: card.kind, card: card.id });
-          };
-          box.appendChild(btn);
-          root.appendChild(box);
+      // Rodada 10: nome da sessão (pasta) no lugar do id cru; cada card diz o que espera.
+      h.api(ctx, 'GET', 'sessions').catch(function () { return {}; }).then(function (r) {
+        var nomes = {};
+        ((r && r.sessions) || []).forEach(function (s) {
+          nomes[s.sessionId] = String(s.cwd || '').split(/[\\/]/).filter(Boolean).pop() || s.name;
+        });
+        ordem.forEach(function (sessionId) {
+          var titulo = (nomes[sessionId] || L.sessionUnknown) + (sessionId ? ' · ' + sessionId.slice(0, 8) : '');
+          root.appendChild(h.el('h3', 'group-title', titulo));
+          porSessao[sessionId].forEach(function (card) { root.appendChild(actionCard(ctx, h, card)); });
         });
       });
     }).catch(function () { limpar(); h.fallback(undefined, function () { SCREENS.actions(ctx, root, h); }); });
@@ -712,13 +631,29 @@
   var TAB_ICONS = { home: 'home', actions: 'check', status: 'shield', config: 'gear' };
   var currentCtx = null;
 
+  function fabButton() {
+    var fab = document.createElement('button');
+    fab.type = 'button';
+    fab.className = 'tab-fab';
+    fab.setAttribute('aria-label', L.newSession);
+    fab.appendChild(icon('plus'));
+    fab.onclick = function () {
+      if (currentCtx && typeof window.GK_NEW_SESSION === 'function') {
+        window.GK_NEW_SESSION(currentCtx, helpers(currentCtx));
+      }
+    };
+    return fab;
+  }
+
   function renderTabs(activeScreen) {
     var nav = document.getElementById('tabs');
     if (!nav) return;
     if (NAV_SCREENS.indexOf(activeScreen) === -1) { nav.hidden = true; return; }
     clear(nav);
     nav.hidden = false;
-    TABS.forEach(function (name) {
+    TABS.forEach(function (name, i) {
+      // Rodada 10: botão central "+" (sessão nova), elevado acima da barra, entre Ações e Status.
+      if (i === 2) nav.appendChild(fabButton());
       var btn = iconLabel('button', TAB_ICONS[name] || name, L[name] || name);
       btn.type = 'button';
       btn.className = 'tab' + (name === activeScreen ? ' tab-active' : '');
@@ -730,7 +665,27 @@
     });
   }
 
+  function helpers(ctx) {
+    return { el: el, clear: clear, api: api, L: L, fallback: showFallback, icon: icon,
+             iconLabel: iconLabel, skeleton: skeleton, showToast: showToast, go: go,
+             every: function (ms, fn) { screenTimers.push(setInterval(fn, ms)); },
+             backLink: function () { return backLink(ctx); } };
+  }
+
+  // Rodada 10: timers de polling (home 5s, live 3s) vivem só enquanto a tela está aberta.
+  var screenTimers = [];
+  function stopTimers() {
+    screenTimers.forEach(function (id) { clearInterval(id); });
+    screenTimers = [];
+  }
+  function go(screen, extra) {
+    var novo = { api: currentCtx.api, who: currentCtx.who, screen: screen, card: '', session: '' };
+    for (var k in (extra || {})) if (Object.prototype.hasOwnProperty.call(extra, k)) novo[k] = extra[k];
+    renderScreen(novo);
+  }
+
   function renderScreen(ctx) {
+    stopTimers();
     currentCtx = ctx;
     var s = screenNode();
     // Fase 3 do redesign: fade sutil ao trocar de tela — opacidade a 0, troca o conteudo, remove
@@ -739,7 +694,7 @@
     clear(s);
     renderTabs(ctx.screen);
     var fn = SCREENS[ctx.screen];
-    if (typeof fn === 'function') { fn(ctx, s, { el: el, clear: clear, api: api, L: L, fallback: showFallback, icon: icon, iconLabel: iconLabel, skeleton: skeleton, showToast: showToast }); }
+    if (typeof fn === 'function') { fn(ctx, s, helpers(ctx)); }
     else {
       s.appendChild(el('p', 'muted', L.preparing));
       document.getElementById('foot').hidden = false;
